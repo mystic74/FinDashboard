@@ -46,139 +46,231 @@ func (m *MockDataService) GetAllStocks() []models.Stock {
 func (m *MockDataService) generateMockStocks() {
 	rand.Seed(time.Now().UnixNano())
 
-	// Generate 100 realistic mock stocks
+	// Generate realistic mock stocks from multiple markets
 	mockData := []struct {
 		symbol        string
 		name          string
 		sector        string
 		industry      string
+		country       string
+		exchange      string
+		currency      string
 		priceBase     float64
 		marketCapBase int64
 	}{
-		// Technology
-		{"AAPL", "Apple Inc.", "Technology", "Consumer Electronics", 178.50, 2800000000000},
-		{"MSFT", "Microsoft Corporation", "Technology", "Software - Infrastructure", 378.25, 2810000000000},
-		{"GOOGL", "Alphabet Inc.", "Technology", "Internet Content & Information", 141.80, 1790000000000},
-		{"AMZN", "Amazon.com Inc.", "Technology", "Internet Retail", 178.35, 1860000000000},
-		{"META", "Meta Platforms Inc.", "Technology", "Internet Content & Information", 505.75, 1300000000000},
-		{"NVDA", "NVIDIA Corporation", "Technology", "Semiconductors", 495.22, 1220000000000},
-		{"TSLA", "Tesla Inc.", "Technology", "Auto Manufacturers", 238.45, 760000000000},
-		{"AMD", "Advanced Micro Devices", "Technology", "Semiconductors", 121.33, 196000000000},
-		{"INTC", "Intel Corporation", "Technology", "Semiconductors", 45.12, 191000000000},
-		{"CRM", "Salesforce Inc.", "Technology", "Software - Application", 265.88, 258000000000},
-		{"ORCL", "Oracle Corporation", "Technology", "Software - Infrastructure", 118.45, 326000000000},
-		{"ADBE", "Adobe Inc.", "Technology", "Software - Application", 582.15, 259000000000},
-		{"CSCO", "Cisco Systems Inc.", "Technology", "Communication Equipment", 48.92, 198000000000},
-		{"IBM", "International Business Machines", "Technology", "IT Services", 166.78, 152000000000},
-		{"QCOM", "Qualcomm Inc.", "Technology", "Semiconductors", 152.35, 170000000000},
+		// =====================================================================
+		// USA - Technology
+		// =====================================================================
+		{"AAPL", "Apple Inc.", "Technology", "Consumer Electronics", "USA", "NASDAQ", "USD", 178.50, 2800000000000},
+		{"MSFT", "Microsoft Corporation", "Technology", "Software - Infrastructure", "USA", "NASDAQ", "USD", 378.25, 2810000000000},
+		{"GOOGL", "Alphabet Inc.", "Technology", "Internet Content & Information", "USA", "NASDAQ", "USD", 141.80, 1790000000000},
+		{"AMZN", "Amazon.com Inc.", "Technology", "Internet Retail", "USA", "NASDAQ", "USD", 178.35, 1860000000000},
+		{"META", "Meta Platforms Inc.", "Technology", "Internet Content & Information", "USA", "NASDAQ", "USD", 505.75, 1300000000000},
+		{"NVDA", "NVIDIA Corporation", "Technology", "Semiconductors", "USA", "NASDAQ", "USD", 495.22, 1220000000000},
+		{"TSLA", "Tesla Inc.", "Technology", "Auto Manufacturers", "USA", "NASDAQ", "USD", 238.45, 760000000000},
 
-		// Healthcare
-		{"JNJ", "Johnson & Johnson", "Healthcare", "Drug Manufacturers", 156.42, 377000000000},
-		{"UNH", "UnitedHealth Group", "Healthcare", "Healthcare Plans", 528.90, 489000000000},
-		{"PFE", "Pfizer Inc.", "Healthcare", "Drug Manufacturers", 28.55, 161000000000},
-		{"ABBV", "AbbVie Inc.", "Healthcare", "Drug Manufacturers", 154.32, 273000000000},
-		{"MRK", "Merck & Co.", "Healthcare", "Drug Manufacturers", 108.65, 275000000000},
-		{"LLY", "Eli Lilly and Company", "Healthcare", "Drug Manufacturers", 598.22, 568000000000},
-		{"TMO", "Thermo Fisher Scientific", "Healthcare", "Diagnostics & Research", 535.45, 206000000000},
-		{"ABT", "Abbott Laboratories", "Healthcare", "Medical Devices", 105.78, 183000000000},
-		{"BMY", "Bristol-Myers Squibb", "Healthcare", "Drug Manufacturers", 51.22, 104000000000},
-		{"AMGN", "Amgen Inc.", "Healthcare", "Drug Manufacturers", 278.95, 149000000000},
+		// =====================================================================
+		// USA - Financial Services / Banking
+		// =====================================================================
+		{"JPM", "JPMorgan Chase & Co.", "Financial Services", "Banks - Diversified", "USA", "NYSE", "USD", 172.45, 498000000000},
+		{"BAC", "Bank of America Corp", "Financial Services", "Banks - Diversified", "USA", "NYSE", "USD", 33.88, 265000000000},
+		{"WFC", "Wells Fargo & Company", "Financial Services", "Banks - Diversified", "USA", "NYSE", "USD", 46.12, 168000000000},
+		{"GS", "Goldman Sachs Group", "Financial Services", "Capital Markets", "USA", "NYSE", "USD", 385.62, 128000000000},
+		{"MS", "Morgan Stanley", "Financial Services", "Capital Markets", "USA", "NYSE", "USD", 87.95, 146000000000},
 
-		// Financial Services
-		{"JPM", "JPMorgan Chase & Co.", "Financial Services", "Banks - Diversified", 172.45, 498000000000},
-		{"BAC", "Bank of America Corp", "Financial Services", "Banks - Diversified", 33.88, 265000000000},
-		{"WFC", "Wells Fargo & Company", "Financial Services", "Banks - Diversified", 46.12, 168000000000},
-		{"GS", "Goldman Sachs Group", "Financial Services", "Capital Markets", 385.62, 128000000000},
-		{"MS", "Morgan Stanley", "Financial Services", "Capital Markets", 87.95, 146000000000},
-		{"V", "Visa Inc.", "Financial Services", "Credit Services", 258.45, 531000000000},
-		{"MA", "Mastercard Inc.", "Financial Services", "Credit Services", 422.80, 395000000000},
-		{"AXP", "American Express", "Financial Services", "Credit Services", 178.92, 133000000000},
-		{"BLK", "BlackRock Inc.", "Financial Services", "Asset Management", 782.35, 118000000000},
-		{"SCHW", "Charles Schwab Corp", "Financial Services", "Capital Markets", 66.55, 121000000000},
+		// =====================================================================
+		// USA - Energy
+		// =====================================================================
+		{"XOM", "Exxon Mobil Corporation", "Energy", "Oil & Gas Integrated", "USA", "NYSE", "USD", 104.55, 418000000000},
+		{"CVX", "Chevron Corporation", "Energy", "Oil & Gas Integrated", "USA", "NYSE", "USD", 148.32, 276000000000},
+		{"COP", "ConocoPhillips", "Energy", "Oil & Gas E&P", "USA", "NYSE", "USD", 115.78, 133000000000},
 
-		// Consumer
-		{"WMT", "Walmart Inc.", "Consumer Defensive", "Discount Stores", 165.22, 446000000000},
-		{"HD", "The Home Depot", "Consumer Cyclical", "Home Improvement Retail", 345.88, 343000000000},
-		{"COST", "Costco Wholesale", "Consumer Defensive", "Discount Stores", 572.35, 254000000000},
-		{"NKE", "Nike Inc.", "Consumer Cyclical", "Footwear & Accessories", 98.75, 150000000000},
-		{"MCD", "McDonald's Corporation", "Consumer Cyclical", "Restaurants", 298.45, 214000000000},
-		{"SBUX", "Starbucks Corporation", "Consumer Cyclical", "Restaurants", 95.62, 109000000000},
-		{"TGT", "Target Corporation", "Consumer Defensive", "Discount Stores", 142.88, 66000000000},
-		{"LOW", "Lowe's Companies", "Consumer Cyclical", "Home Improvement Retail", 218.45, 128000000000},
-		{"DIS", "The Walt Disney Company", "Communication Services", "Entertainment", 91.35, 167000000000},
-		{"NFLX", "Netflix Inc.", "Communication Services", "Entertainment", 478.92, 212000000000},
-		{"PEP", "PepsiCo Inc.", "Consumer Defensive", "Beverages - Non-Alcoholic", 178.65, 245000000000},
-		{"KO", "The Coca-Cola Company", "Consumer Defensive", "Beverages - Non-Alcoholic", 60.22, 261000000000},
+		// =====================================================================
+		// USA - Healthcare
+		// =====================================================================
+		{"JNJ", "Johnson & Johnson", "Healthcare", "Drug Manufacturers", "USA", "NYSE", "USD", 156.42, 377000000000},
+		{"UNH", "UnitedHealth Group", "Healthcare", "Healthcare Plans", "USA", "NYSE", "USD", 528.90, 489000000000},
+		{"PFE", "Pfizer Inc.", "Healthcare", "Drug Manufacturers", "USA", "NYSE", "USD", 28.55, 161000000000},
 
-		// Energy
-		{"XOM", "Exxon Mobil Corporation", "Energy", "Oil & Gas Integrated", 104.55, 418000000000},
-		{"CVX", "Chevron Corporation", "Energy", "Oil & Gas Integrated", 148.32, 276000000000},
-		{"COP", "ConocoPhillips", "Energy", "Oil & Gas E&P", 115.78, 133000000000},
-		{"SLB", "Schlumberger NV", "Energy", "Oil & Gas Equipment", 52.45, 75000000000},
-		{"EOG", "EOG Resources", "Energy", "Oil & Gas E&P", 122.88, 72000000000},
+		// =====================================================================
+		// USA - Dividend Aristocrats (High Yield)
+		// =====================================================================
+		{"O", "Realty Income Corp", "Real Estate", "REIT - Retail", "USA", "NYSE", "USD", 55.62, 44000000000},
+		{"T", "AT&T Inc.", "Communication Services", "Telecom Services", "USA", "NYSE", "USD", 17.45, 125000000000},
+		{"VZ", "Verizon Communications", "Communication Services", "Telecom Services", "USA", "NYSE", "USD", 38.88, 163000000000},
+		{"KO", "The Coca-Cola Company", "Consumer Defensive", "Beverages - Non-Alcoholic", "USA", "NYSE", "USD", 60.22, 261000000000},
+		{"PG", "Procter & Gamble", "Consumer Defensive", "Household Products", "USA", "NYSE", "USD", 152.78, 361000000000},
 
-		// Industrials
-		{"CAT", "Caterpillar Inc.", "Industrials", "Farm & Heavy Construction", 278.45, 138000000000},
-		{"DE", "Deere & Company", "Industrials", "Farm & Heavy Construction", 385.22, 112000000000},
-		{"BA", "The Boeing Company", "Industrials", "Aerospace & Defense", 205.88, 125000000000},
-		{"HON", "Honeywell International", "Industrials", "Conglomerates", 198.75, 130000000000},
-		{"UPS", "United Parcel Service", "Industrials", "Integrated Freight", 155.32, 134000000000},
-		{"GE", "General Electric", "Industrials", "Aerospace & Defense", 122.45, 133000000000},
-		{"LMT", "Lockheed Martin", "Industrials", "Aerospace & Defense", 452.88, 108000000000},
-		{"RTX", "RTX Corporation", "Industrials", "Aerospace & Defense", 88.92, 130000000000},
+		// =====================================================================
+		// USA - Value Stocks
+		// =====================================================================
+		{"BRK.B", "Berkshire Hathaway B", "Financial Services", "Insurance - Diversified", "USA", "NYSE", "USD", 358.92, 789000000000},
+		{"GM", "General Motors", "Consumer Cyclical", "Auto Manufacturers", "USA", "NYSE", "USD", 35.42, 48000000000},
+		{"F", "Ford Motor Company", "Consumer Cyclical", "Auto Manufacturers", "USA", "NYSE", "USD", 12.15, 48000000000},
+		{"INTC", "Intel Corporation", "Technology", "Semiconductors", "USA", "NASDAQ", "USD", 45.12, 191000000000},
 
-		// Real Estate
-		{"AMT", "American Tower Corp", "Real Estate", "REIT - Specialty", 198.55, 92000000000},
-		{"PLD", "Prologis Inc.", "Real Estate", "REIT - Industrial", 122.35, 113000000000},
-		{"CCI", "Crown Castle Inc.", "Real Estate", "REIT - Specialty", 108.72, 47000000000},
-		{"EQIX", "Equinix Inc.", "Real Estate", "REIT - Specialty", 782.45, 73000000000},
-		{"SPG", "Simon Property Group", "Real Estate", "REIT - Retail", 142.88, 46000000000},
-		{"O", "Realty Income Corp", "Real Estate", "REIT - Retail", 55.62, 44000000000},
+		// =====================================================================
+		// USA - High Risk / Growth
+		// =====================================================================
+		{"COIN", "Coinbase Global", "Financial Services", "Capital Markets", "USA", "NASDAQ", "USD", 142.55, 35000000000},
+		{"RIVN", "Rivian Automotive", "Consumer Cyclical", "Auto Manufacturers", "USA", "NASDAQ", "USD", 18.22, 18000000000},
+		{"PLTR", "Palantir Technologies", "Technology", "Software - Infrastructure", "USA", "NYSE", "USD", 22.35, 48000000000},
+		{"SOFI", "SoFi Technologies", "Financial Services", "Credit Services", "USA", "NASDAQ", "USD", 8.45, 8500000000},
+		{"HOOD", "Robinhood Markets", "Financial Services", "Capital Markets", "USA", "NASDAQ", "USD", 10.88, 9500000000},
 
-		// Utilities
-		{"NEE", "NextEra Energy", "Utilities", "Utilities - Regulated Electric", 68.45, 141000000000},
-		{"DUK", "Duke Energy Corp", "Utilities", "Utilities - Regulated Electric", 98.22, 76000000000},
-		{"SO", "Southern Company", "Utilities", "Utilities - Regulated Electric", 72.88, 79000000000},
-		{"D", "Dominion Energy", "Utilities", "Utilities - Regulated Electric", 48.55, 40000000000},
-		{"AEP", "American Electric Power", "Utilities", "Utilities - Regulated Electric", 85.32, 44000000000},
+		// =====================================================================
+		// USA - Momentum (High Beta)
+		// =====================================================================
+		{"AMD", "Advanced Micro Devices", "Technology", "Semiconductors", "USA", "NASDAQ", "USD", 121.33, 196000000000},
+		{"NFLX", "Netflix Inc.", "Communication Services", "Entertainment", "USA", "NASDAQ", "USD", 478.92, 212000000000},
+		{"CRM", "Salesforce Inc.", "Technology", "Software - Application", "USA", "NYSE", "USD", 265.88, 258000000000},
 
-		// Small Cap Growth
-		{"DDOG", "Datadog Inc.", "Technology", "Software - Application", 118.45, 38000000000},
-		{"SNOW", "Snowflake Inc.", "Technology", "Software - Infrastructure", 162.88, 53000000000},
-		{"CRWD", "CrowdStrike Holdings", "Technology", "Software - Infrastructure", 228.35, 55000000000},
-		{"ZS", "Zscaler Inc.", "Technology", "Software - Infrastructure", 195.72, 29000000000},
-		{"OKTA", "Okta Inc.", "Technology", "Software - Infrastructure", 88.45, 14000000000},
-		{"NET", "Cloudflare Inc.", "Technology", "Software - Infrastructure", 78.92, 26000000000},
-		{"MDB", "MongoDB Inc.", "Technology", "Software - Infrastructure", 398.55, 28000000000},
+		// =====================================================================
+		// ISRAEL - Tel Aviv Stock Exchange
+		// =====================================================================
+		{"TEVA", "Teva Pharmaceutical", "Healthcare", "Drug Manufacturers - Generic", "Israel", "NYSE", "USD", 15.82, 17500000000},
+		{"NICE", "NICE Ltd", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 185.45, 12200000000},
+		{"CHKP", "Check Point Software", "Technology", "Software - Infrastructure", "Israel", "NASDAQ", "USD", 142.88, 16800000000},
+		{"CYBR", "CyberArk Software", "Technology", "Software - Infrastructure", "Israel", "NASDAQ", "USD", 245.55, 10500000000},
+		{"WIX", "Wix.com Ltd", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 142.35, 8200000000},
+		{"MNDY", "monday.com Ltd", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 195.22, 9500000000},
+		{"GLBE", "Global-e Online", "Technology", "Internet Retail", "Israel", "NASDAQ", "USD", 38.45, 6500000000},
+		{"LPSN", "LivePerson Inc", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 3.22, 350000000},
+		{"FVRR", "Fiverr International", "Technology", "Internet Content & Information", "Israel", "NYSE", "USD", 25.88, 920000000},
+		{"LEUMI.TA", "Bank Leumi", "Financial Services", "Banks - Regional", "Israel", "TASE", "ILS", 34.55, 48000000000},
+		{"HAPOALIM.TA", "Bank Hapoalim", "Financial Services", "Banks - Regional", "Israel", "TASE", "ILS", 38.22, 52000000000},
+		{"ICL", "ICL Group", "Basic Materials", "Agricultural Inputs", "Israel", "NYSE", "USD", 5.45, 7000000000},
 
-		// Value Stocks
-		{"BRK.B", "Berkshire Hathaway B", "Financial Services", "Insurance - Diversified", 358.92, 789000000000},
-		{"T", "AT&T Inc.", "Communication Services", "Telecom Services", 17.45, 125000000000},
-		{"VZ", "Verizon Communications", "Communication Services", "Telecom Services", 38.88, 163000000000},
-		{"TMUS", "T-Mobile US Inc.", "Communication Services", "Telecom Services", 162.55, 191000000000},
+		// =====================================================================
+		// UK - London Stock Exchange
+		// =====================================================================
+		{"HSBA.L", "HSBC Holdings", "Financial Services", "Banks - Diversified", "UK", "LSE", "GBP", 642.50, 128000000000},
+		{"BP.L", "BP plc", "Energy", "Oil & Gas Integrated", "UK", "LSE", "GBP", 485.35, 88000000000},
+		{"SHEL.L", "Shell plc", "Energy", "Oil & Gas Integrated", "UK", "LSE", "GBP", 2542.50, 185000000000},
+		{"AZN.L", "AstraZeneca", "Healthcare", "Drug Manufacturers", "UK", "LSE", "GBP", 10285.00, 162000000000},
+		{"GSK.L", "GSK plc", "Healthcare", "Drug Manufacturers", "UK", "LSE", "GBP", 1445.20, 60000000000},
+		{"ULVR.L", "Unilever PLC", "Consumer Defensive", "Household Products", "UK", "LSE", "GBP", 4125.50, 105000000000},
+		{"RIO.L", "Rio Tinto", "Basic Materials", "Other Industrial Metals", "UK", "LSE", "GBP", 5285.00, 85000000000},
+		{"BARC.L", "Barclays PLC", "Financial Services", "Banks - Diversified", "UK", "LSE", "GBP", 175.82, 28000000000},
+		{"LLOY.L", "Lloyds Banking Group", "Financial Services", "Banks - Regional", "UK", "LSE", "GBP", 52.45, 33000000000},
+		{"VOD.L", "Vodafone Group", "Communication Services", "Telecom Services", "UK", "LSE", "GBP", 72.88, 20000000000},
+		{"BT.A.L", "BT Group", "Communication Services", "Telecom Services", "UK", "LSE", "GBP", 128.55, 13000000000},
+		{"TSCO.L", "Tesco PLC", "Consumer Defensive", "Grocery Stores", "UK", "LSE", "GBP", 285.40, 21000000000},
+		{"DGE.L", "Diageo", "Consumer Defensive", "Beverages - Wineries & Distilleries", "UK", "LSE", "GBP", 2785.50, 62000000000},
 
-		// Dividend Aristocrats
-		{"PG", "Procter & Gamble", "Consumer Defensive", "Household Products", 152.78, 361000000000},
-		{"MMM", "3M Company", "Industrials", "Conglomerates", 98.45, 54000000000},
-		{"EMR", "Emerson Electric", "Industrials", "Electrical Equipment", 98.22, 57000000000},
-		{"CLX", "The Clorox Company", "Consumer Defensive", "Household Products", 142.55, 17600000000},
-		{"KMB", "Kimberly-Clark", "Consumer Defensive", "Household Products", 128.35, 43000000000},
-		{"SYY", "Sysco Corporation", "Consumer Defensive", "Food Distribution", 75.88, 38000000000},
-		{"AFL", "Aflac Inc.", "Financial Services", "Insurance - Life", 82.45, 50000000000},
-		{"CINF", "Cincinnati Financial", "Financial Services", "Insurance - Property", 112.72, 17500000000},
-		{"ED", "Consolidated Edison", "Utilities", "Utilities - Regulated Electric", 92.35, 32000000000},
-		{"XEL", "Xcel Energy", "Utilities", "Utilities - Regulated Electric", 62.88, 35000000000},
+		// =====================================================================
+		// GERMANY - Frankfurt Stock Exchange
+		// =====================================================================
+		{"SAP.DE", "SAP SE", "Technology", "Software - Application", "Germany", "XETRA", "EUR", 145.88, 178000000000},
+		{"SIE.DE", "Siemens AG", "Industrials", "Conglomerates", "Germany", "XETRA", "EUR", 168.42, 135000000000},
+		{"ALV.DE", "Allianz SE", "Financial Services", "Insurance - Diversified", "Germany", "XETRA", "EUR", 245.55, 98000000000},
+		{"BAS.DE", "BASF SE", "Basic Materials", "Chemicals", "Germany", "XETRA", "EUR", 45.22, 40000000000},
+		{"BAYN.DE", "Bayer AG", "Healthcare", "Drug Manufacturers", "Germany", "XETRA", "EUR", 28.55, 28000000000},
+		{"BMW.DE", "BMW AG", "Consumer Cyclical", "Auto Manufacturers", "Germany", "XETRA", "EUR", 98.45, 62000000000},
+		{"MBG.DE", "Mercedes-Benz Group", "Consumer Cyclical", "Auto Manufacturers", "Germany", "XETRA", "EUR", 62.88, 67000000000},
+		{"VOW3.DE", "Volkswagen AG", "Consumer Cyclical", "Auto Manufacturers", "Germany", "XETRA", "EUR", 108.55, 55000000000},
+		{"DBK.DE", "Deutsche Bank", "Financial Services", "Banks - Diversified", "Germany", "XETRA", "EUR", 14.85, 29000000000},
+		{"DTE.DE", "Deutsche Telekom", "Communication Services", "Telecom Services", "Germany", "XETRA", "EUR", 22.45, 112000000000},
+
+		// =====================================================================
+		// JAPAN - Tokyo Stock Exchange
+		// =====================================================================
+		{"7203.T", "Toyota Motor Corp", "Consumer Cyclical", "Auto Manufacturers", "Japan", "TSE", "JPY", 2845.00, 285000000000},
+		{"6758.T", "Sony Group Corp", "Technology", "Consumer Electronics", "Japan", "TSE", "JPY", 12450.00, 155000000000},
+		{"9984.T", "SoftBank Group", "Communication Services", "Telecom Services", "Japan", "TSE", "JPY", 6785.00, 98000000000},
+		{"8306.T", "Mitsubishi UFJ Financial", "Financial Services", "Banks - Diversified", "Japan", "TSE", "JPY", 1285.50, 115000000000},
+		{"9432.T", "Nippon Telegraph & Tel", "Communication Services", "Telecom Services", "Japan", "TSE", "JPY", 168.50, 152000000000},
+		{"7267.T", "Honda Motor Co", "Consumer Cyclical", "Auto Manufacturers", "Japan", "TSE", "JPY", 1485.00, 78000000000},
+
+		// =====================================================================
+		// CHINA / HONG KONG
+		// =====================================================================
+		{"BABA", "Alibaba Group", "Consumer Cyclical", "Internet Retail", "China", "NYSE", "USD", 78.45, 195000000000},
+		{"JD", "JD.com Inc", "Consumer Cyclical", "Internet Retail", "China", "NASDAQ", "USD", 28.55, 45000000000},
+		{"PDD", "PDD Holdings", "Consumer Cyclical", "Internet Retail", "China", "NASDAQ", "USD", 132.88, 185000000000},
+		{"BIDU", "Baidu Inc", "Communication Services", "Internet Content & Information", "China", "NASDAQ", "USD", 95.42, 33000000000},
+		{"NIO", "NIO Inc", "Consumer Cyclical", "Auto Manufacturers", "China", "NYSE", "USD", 5.88, 11000000000},
+		{"XPEV", "XPeng Inc", "Consumer Cyclical", "Auto Manufacturers", "China", "NYSE", "USD", 8.22, 7500000000},
+		{"0700.HK", "Tencent Holdings", "Communication Services", "Internet Content & Information", "China", "HKEX", "HKD", 312.60, 360000000000},
+		{"9988.HK", "Alibaba Group HK", "Consumer Cyclical", "Internet Retail", "China", "HKEX", "HKD", 78.85, 195000000000},
+
+		// =====================================================================
+		// INDIA
+		// =====================================================================
+		{"INFY", "Infosys Ltd", "Technology", "IT Services", "India", "NYSE", "USD", 18.22, 76000000000},
+		{"WIT", "Wipro Ltd", "Technology", "IT Services", "India", "NYSE", "USD", 5.45, 28000000000},
+		{"HDB", "HDFC Bank", "Financial Services", "Banks - Regional", "India", "NYSE", "USD", 58.88, 142000000000},
+		{"IBN", "ICICI Bank", "Financial Services", "Banks - Regional", "India", "NYSE", "USD", 25.42, 88000000000},
+		{"TTM", "Tata Motors", "Consumer Cyclical", "Auto Manufacturers", "India", "NYSE", "USD", 22.55, 85000000000},
+
+		// =====================================================================
+		// BRAZIL
+		// =====================================================================
+		{"VALE", "Vale S.A.", "Basic Materials", "Other Industrial Metals", "Brazil", "NYSE", "USD", 12.45, 52000000000},
+		{"PBR", "Petrobras", "Energy", "Oil & Gas Integrated", "Brazil", "NYSE", "USD", 14.88, 98000000000},
+		{"ITUB", "Itau Unibanco", "Financial Services", "Banks - Regional", "Brazil", "NYSE", "USD", 6.22, 60000000000},
+		{"BBD", "Banco Bradesco", "Financial Services", "Banks - Regional", "Brazil", "NYSE", "USD", 2.88, 32000000000},
+		{"NU", "Nu Holdings", "Financial Services", "Banks - Regional", "Brazil", "NYSE", "USD", 11.45, 55000000000},
+
+		// =====================================================================
+		// CANADA
+		// =====================================================================
+		{"TD", "Toronto-Dominion Bank", "Financial Services", "Banks - Diversified", "Canada", "NYSE", "USD", 58.22, 105000000000},
+		{"RY", "Royal Bank of Canada", "Financial Services", "Banks - Diversified", "Canada", "NYSE", "USD", 98.45, 138000000000},
+		{"ENB", "Enbridge Inc", "Energy", "Oil & Gas Midstream", "Canada", "NYSE", "USD", 35.88, 78000000000},
+		{"CNQ", "Canadian Natural Resources", "Energy", "Oil & Gas E&P", "Canada", "NYSE", "USD", 32.42, 68000000000},
+		{"SHOP", "Shopify Inc", "Technology", "Software - Application", "Canada", "NYSE", "USD", 68.55, 88000000000},
+
+		// =====================================================================
+		// AUSTRALIA
+		// =====================================================================
+		{"BHP", "BHP Group", "Basic Materials", "Other Industrial Metals", "Australia", "NYSE", "USD", 58.22, 145000000000},
+		{"RIO", "Rio Tinto Group", "Basic Materials", "Other Industrial Metals", "Australia", "NYSE", "USD", 65.88, 105000000000},
+
+		// =====================================================================
+		// SWITZERLAND
+		// =====================================================================
+		{"NESN.SW", "Nestle S.A.", "Consumer Defensive", "Packaged Foods", "Switzerland", "SIX", "CHF", 98.42, 278000000000},
+		{"NOVN.SW", "Novartis AG", "Healthcare", "Drug Manufacturers", "Switzerland", "SIX", "CHF", 92.55, 198000000000},
+		{"ROG.SW", "Roche Holding", "Healthcare", "Drug Manufacturers", "Switzerland", "SIX", "CHF", 248.88, 212000000000},
+		{"UBS", "UBS Group AG", "Financial Services", "Banks - Diversified", "Switzerland", "NYSE", "USD", 28.45, 92000000000},
+		{"CS", "Credit Suisse Group", "Financial Services", "Capital Markets", "Switzerland", "NYSE", "USD", 0.82, 2800000000},
+
+		// =====================================================================
+		// FRANCE
+		// =====================================================================
+		{"MC.PA", "LVMH", "Consumer Cyclical", "Luxury Goods", "France", "EURONEXT", "EUR", 745.50, 375000000000},
+		{"OR.PA", "L'Oreal S.A.", "Consumer Defensive", "Household Products", "France", "EURONEXT", "EUR", 425.88, 228000000000},
+		{"TTE.PA", "TotalEnergies", "Energy", "Oil & Gas Integrated", "France", "EURONEXT", "EUR", 58.22, 142000000000},
+		{"SAN.PA", "Sanofi S.A.", "Healthcare", "Drug Manufacturers", "France", "EURONEXT", "EUR", 92.45, 118000000000},
+		{"BNP.PA", "BNP Paribas", "Financial Services", "Banks - Diversified", "France", "EURONEXT", "EUR", 58.88, 72000000000},
+
+		// =====================================================================
+		// NETHERLANDS
+		// =====================================================================
+		{"ASML", "ASML Holding", "Technology", "Semiconductor Equipment", "Netherlands", "NASDAQ", "USD", 685.42, 278000000000},
+
+		// =====================================================================
+		// SOUTH KOREA
+		// =====================================================================
+		{"005930.KS", "Samsung Electronics", "Technology", "Consumer Electronics", "South Korea", "KRX", "KRW", 71500.00, 425000000000},
+		{"000660.KS", "SK Hynix", "Technology", "Semiconductors", "South Korea", "KRX", "KRW", 135000.00, 98000000000},
+
+		// =====================================================================
+		// TAIWAN
+		// =====================================================================
+		{"TSM", "Taiwan Semiconductor", "Technology", "Semiconductors", "Taiwan", "NYSE", "USD", 108.55, 562000000000},
 	}
 
 	m.stocks = make([]models.Stock, 0, len(mockData))
 
 	for _, data := range mockData {
-		stock := m.generateStock(data.symbol, data.name, data.sector, data.industry, data.priceBase, data.marketCapBase)
+		stock := m.generateStock(data.symbol, data.name, data.sector, data.industry, data.country, data.exchange, data.currency, data.priceBase, data.marketCapBase)
 		m.stocks = append(m.stocks, stock)
 	}
 }
 
-func (m *MockDataService) generateStock(symbol, name, sector, industry string, priceBase float64, marketCapBase int64) models.Stock {
+func (m *MockDataService) generateStock(symbol, name, sector, industry, country, exchange, currency string, priceBase float64, marketCapBase int64) models.Stock {
 	// Add some randomness
 	priceVariation := 0.95 + rand.Float64()*0.1
 	price := priceBase * priceVariation
@@ -250,8 +342,9 @@ func (m *MockDataService) generateStock(symbol, name, sector, industry string, p
 	return models.Stock{
 		Symbol:            symbol,
 		Name:              name,
-		Exchange:          "NASDAQ",
-		Currency:          "USD",
+		Exchange:          exchange,
+		Currency:          currency,
+		Country:           country,
 		Price:             round2(price),
 		Change:            round2(price * (return1W / 100 / 5)),
 		ChangePercent:     round2(return1W / 5),
