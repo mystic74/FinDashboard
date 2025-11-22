@@ -1,10 +1,14 @@
-.PHONY: all help dev dev-docker prod backend frontend test clean
+.PHONY: all help setup dev dev-docker prod backend frontend test clean
 
 # Default target
 all: help
 
 help:
 	@echo "Stock Screener Dashboard - Available Commands"
+	@echo ""
+	@echo "Setup:"
+	@echo "  make setup        - First-time setup (copy .env and install deps)"
+	@echo "  make deps         - Install all dependencies"
 	@echo ""
 	@echo "Development (No Docker - easier debugging):"
 	@echo "  make dev          - Run both backend and frontend in dev mode"
@@ -17,15 +21,37 @@ help:
 	@echo "Production (Docker):"
 	@echo "  make prod         - Build and run production containers"
 	@echo "  make prod-build   - Build production images only"
+	@echo "  make prod-down    - Stop production containers"
+	@echo "  make prod-logs    - View production logs"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test         - Run all tests"
-	@echo "  make test-backend - Run backend tests only"
 	@echo "  make test-verbose - Run tests with verbose output"
+	@echo "  make test-coverage- Generate test coverage report"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean        - Clean build artifacts and containers"
-	@echo "  make deps         - Install all dependencies"
+	@echo ""
+	@echo "Environment:"
+	@echo "  Configure via .env file (see .env.example)"
+	@echo "  DEMO_MODE=true (default) uses mock data"
+	@echo "  DEMO_MODE=false uses live Yahoo Finance API"
+
+# =============================================================================
+# Setup
+# =============================================================================
+
+setup:
+	@echo "Setting up Stock Screener Dashboard..."
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "Created .env from .env.example"; \
+	else \
+		echo ".env already exists, skipping..."; \
+	fi
+	@make deps
+	@echo ""
+	@echo "Setup complete! Run 'make dev' to start development servers."
 
 # =============================================================================
 # Development without Docker (recommended for debugging)

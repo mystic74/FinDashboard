@@ -74,6 +74,74 @@ FinDashboard/
 
 ## Getting Started
 
+### Quick Start with Make (Recommended)
+
+```bash
+# Install dependencies
+make deps
+
+# Run in development mode (no Docker)
+make dev
+
+# Or run with Docker
+make prod
+```
+
+See all available commands:
+```bash
+make help
+```
+
+### Development Modes
+
+#### Option 1: Local Development (Easier Debugging)
+
+```bash
+# Terminal 1 - Backend
+cd stock-screener-backend
+go run .
+
+# Terminal 2 - Frontend
+cd stock-screener-frontend
+npm install
+npm run dev
+```
+
+Or simply:
+```bash
+make dev
+```
+
+#### Option 2: Docker Development (Hot Reload)
+
+```bash
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Or:
+```bash
+make dev-docker
+```
+
+#### Option 3: Docker Production
+
+```bash
+docker-compose up --build -d
+```
+
+Or:
+```bash
+make prod
+```
+
+### URLs
+
+| Mode | Frontend | Backend API |
+|------|----------|-------------|
+| Local Dev | http://localhost:5173 | http://localhost:8080 |
+| Docker Dev | http://localhost:5173 | http://localhost:8080 |
+| Docker Prod | http://localhost:3000 | http://localhost:8080 |
+
 ### Backend
 
 ```bash
@@ -138,11 +206,41 @@ Test coverage includes:
 
 ## Environment Variables
 
-```env
-SERVER_PORT=8080
-FMP_API_KEY=your_api_key
-ALPHA_VANTAGE_KEY=your_api_key
+Copy `.env.example` to `.env` and configure:
+
+```bash
+cp .env.example .env
 ```
+
+### Backend Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | Server port |
+| `GIN_MODE` | `release` | Gin mode (`debug` or `release`) |
+| `DEMO_MODE` | `true` | Use mock data (`true`) or live Yahoo Finance (`false`) |
+| `CORS_ORIGIN` | `http://localhost:3000` | Allowed CORS origins |
+| `CACHE_TTL` | `5m` | Cache time-to-live |
+
+### Frontend Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_API_URL` | `http://localhost:8080` | Backend API URL |
+
+### Demo Mode
+
+By default, the application runs in **Demo Mode** with mock stock data. This is useful for:
+- Development without API rate limits
+- Testing UI without network dependencies
+- Running in environments where Yahoo Finance is blocked
+
+To use live data from Yahoo Finance:
+```bash
+DEMO_MODE=false go run .
+```
+
+> **Note**: Yahoo Finance may block requests in some environments. Demo mode is recommended for development.
 
 ## License
 
