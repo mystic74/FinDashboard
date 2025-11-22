@@ -213,11 +213,11 @@ func TestPredefinedScreeners(t *testing.T) {
 		result := engine.ApplyFilters(stocks, screener.Filters)
 
 		for _, s := range result {
-			assert.Less(t, s.PERatio, 15.0, "P/E should be < 15")
+			assert.Less(t, s.PERatio, 20.0, "P/E should be < 20")
 			assert.Greater(t, s.PERatio, 0.0, "P/E should be > 0")
-			assert.Less(t, s.PBRatio, 1.5, "P/B should be < 1.5")
-			assert.Less(t, s.DebtToEquity, 0.5, "D/E should be < 0.5")
-			assert.Greater(t, s.ROE, 10.0, "ROE should be > 10%")
+			assert.Less(t, s.PBRatio, 5.0, "P/B should be < 5")
+			assert.Less(t, s.DebtToEquity, 1.5, "D/E should be < 1.5")
+			assert.Greater(t, s.FreeCashFlow, int64(0), "FCF should be > 0")
 		}
 	})
 
@@ -387,6 +387,179 @@ func TestPiotroskiScoreCalculation(t *testing.T) {
 			assert.LessOrEqual(t, score, tt.maxScore)
 		})
 	}
+}
+
+func TestCountrySectorFiltering(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	// Add test stocks with country data
+	stocks := []models.Stock{
+		{Symbol: "AAPL", Name: "Apple", Sector: "Technology", Country: "USA", PERatio: 25},
+		{Symbol: "MSFT", Name: "Microsoft", Sector: "Technology", Country: "USA", PERatio: 30},
+		{Symbol: "LEUMI", Name: "Bank Leumi", Sector: "Financial Services", Country: "Israel", PERatio: 12},
+		{Symbol: "HSBC", Name: "HSBC Holdings", Sector: "Financial Services", Country: "UK", PERatio: 10},
+		{Symbol: "SAP", Name: "SAP SE", Sector: "Technology", Country: "Germany", PERatio: 22},
+	}
+
+	t.Run("Filter by country", func(t *testing.T) {
+		filters := []models.Filter{
+			{Field: "country", Operator: models.OpEquals, Value: "USA"},
+		}
+		result := engine.ApplyFilters(stocks, filters)
+		assert.Len(t, result, 2)
+		for _, s := range result {
+			assert.Equal(t, "USA", s.Country)
+		}
+	})
+
+	t.Run("Filter by sector", func(t *testing.T) {
+		filters := []models.Filter{
+			{Field: "sector", Operator: models.OpEquals, Value: "Technology"},
+		}
+		result := engine.ApplyFilters(stocks, filters)
+		assert.Len(t, result, 3)
+		for _, s := range result {
+			assert.Equal(t, "Technology", s.Sector)
+		}
+	})
+
+	t.Run("Filter by country and sector", func(t *testing.T) {
+		filters := []models.Filter{
+			{Field: "country", Operator: models.OpEquals, Value: "USA"},
+			{Field: "sector", Operator: models.OpEquals, Value: "Technology"},
+		}
+		result := engine.ApplyFilters(stocks, filters)
+		assert.Len(t, result, 2) // AAPL and MSFT
+		for _, s := range result {
+			assert.Equal(t, "USA", s.Country)
+			assert.Equal(t, "Technology", s.Sector)
+		}
+	})
+
+	t.Run("Filter by country, sector, and metric", func(t *testing.T) {
+		filters := []models.Filter{
+			{Field: "sector", Operator: models.OpEquals, Value: "Financial Services"},
+			{Field: "peRatio", Operator: models.OpLessThan, Value: 15},
+		}
+		result := engine.ApplyFilters(stocks, filters)
+		assert.Len(t, result, 2) // LEUMI and HSBC
+		for _, s := range result {
+			assert.Equal(t, "Financial Services", s.Sector)
+			assert.Less(t, s.PERatio, 15.0)
+		}
+	})
+}
+
+func TestCashIsKingScreener(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	stocks := []models.Stock{
+		{
+			Symbol: "STRONG", Name: "Strong Cash Co",
+			CurrentRatio: 2.5, QuickRatio: 2.0, CashToDebt: 1.5,
+			OperatingCashFlow: 1000000,
+		},
+		{
+			Symbol: "WEAK", Name: "Weak Cash Co",
+			CurrentRatio: 0.8, QuickRatio: 0.5, CashToDebt: 0.3,
+			OperatingCashFlow: -100000,
+		},
+	}
+
+	t.Run("Cash is King filters strong cash positions", func(t *testing.T) {
+		screener := models.CashIsKingScreener()
+		result := engine.ApplyFilters(stocks, screener.Filters)
+
+		// Only STRONG should pass
+		assert.Len(t, result, 1)
+		assert.Equal(t, "STRONG", result[0].Symbol)
+
+		for _, s := range result {
+			assert.Greater(t, s.CurrentRatio, 2.0, "Current ratio should be > 2")
+			assert.Greater(t, s.QuickRatio, 1.5, "Quick ratio should be > 1.5")
+			assert.Greater(t, s.CashToDebt, 1.0, "Cash to debt should be > 1")
+			assert.Greater(t, s.OperatingCashFlow, int64(0), "Operating cash flow should be > 0")
+		}
+	})
+}
+
+func TestMomentumMastersScreener(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	stocks := []models.Stock{
+		{
+			Symbol: "MOMENTUM", Name: "Momentum Stock",
+			Return1W: 5, Return3M: 30, Return6M: 40,
+			Volume: 500000,
+		},
+		{
+			Symbol: "SLOW", Name: "Slow Stock",
+			Return1W: -2, Return3M: 5, Return6M: -10,
+			Volume: 500000,
+		},
+	}
+
+	t.Run("Momentum Masters filters high momentum stocks", func(t *testing.T) {
+		screener := models.MomentumMastersScreener()
+		result := engine.ApplyFilters(stocks, screener.Filters)
+
+		// Only MOMENTUM should pass
+		assert.Len(t, result, 1)
+		assert.Equal(t, "MOMENTUM", result[0].Symbol)
+
+		for _, s := range result {
+			assert.Greater(t, s.Return1W, 0.0, "1W return should be > 0")
+			assert.Greater(t, s.Return3M, 25.0, "3M return should be > 25%")
+			assert.Greater(t, s.Return6M, 25.0, "6M return should be > 25%")
+			assert.Greater(t, s.Volume, int64(100000), "Volume should be > 100k")
+		}
+	})
+}
+
+func TestMockDataServiceCountries(t *testing.T) {
+	service := NewMockDataService()
+	stocks := service.GetAllStocks()
+
+	// Count countries
+	countries := make(map[string]int)
+	for _, s := range stocks {
+		countries[s.Country]++
+	}
+
+	t.Run("Has multiple countries", func(t *testing.T) {
+		assert.GreaterOrEqual(t, len(countries), 5, "Should have at least 5 different countries")
+	})
+
+	t.Run("Has USA stocks", func(t *testing.T) {
+		assert.Greater(t, countries["USA"], 0, "Should have USA stocks")
+	})
+
+	t.Run("Has international stocks", func(t *testing.T) {
+		// Check for at least some international stocks
+		internationalCount := 0
+		for country, count := range countries {
+			if country != "USA" && country != "" {
+				internationalCount += count
+			}
+		}
+		assert.Greater(t, internationalCount, 10, "Should have at least 10 international stocks")
+	})
+
+	t.Run("Stocks have CashToDebt", func(t *testing.T) {
+		stocksWithCashToDebt := 0
+		for _, s := range stocks {
+			if s.CashToDebt > 0 {
+				stocksWithCashToDebt++
+			}
+		}
+		assert.Greater(t, stocksWithCashToDebt, len(stocks)/2, "Most stocks should have CashToDebt > 0")
+	})
 }
 
 func TestAltmanZCalculation(t *testing.T) {

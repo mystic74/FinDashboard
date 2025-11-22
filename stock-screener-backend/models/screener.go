@@ -99,12 +99,11 @@ func ValueOpportunitiesScreener() Screener {
 		Category:    "Value",
 		Icon:        "search",
 		Filters: []Filter{
-			{Field: "peRatio", Operator: OpLessThan, Value: 15},
+			{Field: "peRatio", Operator: OpLessThan, Value: 20},
 			{Field: "peRatio", Operator: OpGreaterThan, Value: 0}, // Ensure positive earnings
-			{Field: "pbRatio", Operator: OpLessThan, Value: 1.5},
-			{Field: "debtToEquity", Operator: OpLessThan, Value: 0.5},
+			{Field: "pbRatio", Operator: OpLessThan, Value: 5},
+			{Field: "debtToEquity", Operator: OpLessThan, Value: 1.5},
 			{Field: "freeCashFlow", Operator: OpGreaterThan, Value: 0},
-			{Field: "roe", Operator: OpGreaterThan, Value: 10},
 		},
 		SortBy:    "peRatio",
 		SortOrder: "asc",

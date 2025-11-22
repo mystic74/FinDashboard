@@ -21,6 +21,8 @@ interface StockTableProps {
   stocks: Stock[];
   isLoading?: boolean;
   onStockClick?: (symbol: string) => void;
+  onSectorClick?: (sector: string) => void;
+  onCountryClick?: (country: string) => void;
 }
 
 const defaultColumns: TableColumn[] = [
@@ -32,11 +34,11 @@ const defaultColumns: TableColumn[] = [
   { key: 'marketCap', label: 'Market Cap', sortable: true, format: 'compact', align: 'right' },
   { key: 'peRatio', label: 'P/E', sortable: true, format: 'number', align: 'right' },
   { key: 'dividendYield', label: 'Div Yield', sortable: true, format: 'percent', align: 'right' },
-  { key: 'roe', label: 'ROE', sortable: true, format: 'percent', align: 'right' },
-  { key: 'sector', label: 'Sector', sortable: true, width: '140px' },
+  { key: 'sector', label: 'Sector', sortable: true, width: '120px' },
+  { key: 'country', label: 'Country', sortable: true, width: '100px' },
 ];
 
-export function StockTable({ stocks, isLoading, onStockClick }: StockTableProps) {
+export function StockTable({ stocks, isLoading, onStockClick, onSectorClick, onCountryClick }: StockTableProps) {
   const [sortKey, setSortKey] = useState<keyof Stock>('marketCap');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [page, setPage] = useState(0);
@@ -189,7 +191,9 @@ export function StockTable({ stocks, isLoading, onStockClick }: StockTableProps)
               <tr
                 key={stock.symbol}
                 onClick={() => onStockClick?.(stock.symbol)}
-                className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors ${
+                className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                  onStockClick ? 'cursor-pointer' : ''
+                } ${
                   index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50/50 dark:bg-gray-800/50'
                 }`}
               >
@@ -213,9 +217,35 @@ export function StockTable({ stocks, isLoading, onStockClick }: StockTableProps)
                         {formatValue(stock[column.key], column.format)}
                       </span>
                     ) : column.key === 'sector' ? (
-                      <span className="text-gray-600 dark:text-gray-400 truncate max-w-[140px] block">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (stock.sector && onSectorClick) onSectorClick(stock.sector);
+                        }}
+                        className={`text-left truncate max-w-[120px] block ${
+                          onSectorClick
+                            ? 'text-primary-600 dark:text-primary-400 hover:underline cursor-pointer'
+                            : 'text-gray-600 dark:text-gray-400'
+                        }`}
+                        disabled={!onSectorClick}
+                      >
                         {stock.sector || '-'}
-                      </span>
+                      </button>
+                    ) : column.key === 'country' ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (stock.country && onCountryClick) onCountryClick(stock.country);
+                        }}
+                        className={`text-left truncate max-w-[100px] block ${
+                          onCountryClick
+                            ? 'text-primary-600 dark:text-primary-400 hover:underline cursor-pointer'
+                            : 'text-gray-600 dark:text-gray-400'
+                        }`}
+                        disabled={!onCountryClick}
+                      >
+                        {stock.country || '-'}
+                      </button>
                     ) : (
                       <span className="text-gray-900 dark:text-white">
                         {formatValue(stock[column.key], column.format)}

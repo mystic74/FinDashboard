@@ -286,18 +286,18 @@ func (m *MockDataService) generateStock(symbol, name, sector, industry, country,
 	grossMargin := 20 + rand.Float64()*50
 	netMargin := 5 + rand.Float64()*25
 	operatingMargin := 10 + rand.Float64()*30
-	currentRatio := 0.8 + rand.Float64()*2
+	currentRatio := 1.0 + rand.Float64()*2.5 // Range: 1.0 to 3.5 for better Cash is King coverage
 	debtToEquity := rand.Float64() * 2
 
 	revenueGrowth := -10 + rand.Float64()*40
 	epsGrowth := -20 + rand.Float64()*50
 
-	// Returns
-	return1W := -5 + rand.Float64()*10
-	return1M := -10 + rand.Float64()*20
-	return3M := -15 + rand.Float64()*40
-	return6M := -20 + rand.Float64()*50
-	return1Y := -30 + rand.Float64()*60
+	// Returns - wider range to include momentum stocks
+	return1W := -5 + rand.Float64()*15    // -5% to +10%
+	return1M := -10 + rand.Float64()*30   // -10% to +20%
+	return3M := -15 + rand.Float64()*55   // -15% to +40% (some can hit >25%)
+	return6M := -20 + rand.Float64()*70   // -20% to +50% (some can hit >25%)
+	return1Y := -30 + rand.Float64()*80   // -30% to +50%
 
 	// RSI
 	rsi := 30 + rand.Float64()*40
@@ -308,6 +308,16 @@ func (m *MockDataService) generateStock(symbol, name, sector, industry, country,
 
 	// Volume
 	volume := int64(float64(marketCapBase) * (0.001 + rand.Float64()*0.005) / price)
+
+	// Cash and debt calculations
+	totalCash := int64(float64(marketCapBase) * 0.1 * (0.3 + rand.Float64()))
+	totalDebt := int64(float64(marketCapBase) * 0.15 * rand.Float64()) // Slightly lower debt range
+	cashToDebt := 0.0
+	if totalDebt > 0 {
+		cashToDebt = float64(totalCash) / float64(totalDebt)
+	} else {
+		cashToDebt = 10.0 // No debt = very high ratio
+	}
 
 	// Calculate Piotroski score based on metrics
 	piotroskiScore := 0
@@ -384,8 +394,9 @@ func (m *MockDataService) generateStock(symbol, name, sector, industry, country,
 		PiotroskiFScore:   piotroskiScore,
 		FreeCashFlow:      int64(float64(marketCapBase) * 0.03 * (0.5 + rand.Float64())),
 		OperatingCashFlow: int64(float64(marketCapBase) * 0.05 * (0.5 + rand.Float64())),
-		TotalCash:         int64(float64(marketCapBase) * 0.1 * (0.3 + rand.Float64())),
-		TotalDebt:         int64(float64(marketCapBase) * 0.2 * rand.Float64()),
+		TotalCash:         totalCash,
+		TotalDebt:         totalDebt,
+		CashToDebt:        round2(cashToDebt),
 		LastUpdated:       time.Now(),
 	}
 }

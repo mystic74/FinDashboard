@@ -367,6 +367,6 @@ func TestPredefinedScreeners(t *testing.T) {
 		assert.True(t, fields["peRatio"])
 		assert.True(t, fields["pbRatio"])
 		assert.True(t, fields["debtToEquity"])
-		assert.True(t, fields["roe"])
+		assert.True(t, fields["freeCashFlow"])
 	})
 }

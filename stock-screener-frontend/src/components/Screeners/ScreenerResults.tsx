@@ -1,6 +1,29 @@
-import { ArrowLeft, Clock, Filter } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Clock, Filter, Info } from 'lucide-react';
 import { useRunScreener } from '../../hooks/useScreener';
 import { StockTable } from '../StockTable/StockTable';
+import type { Filter as FilterType } from '../../types';
+
+// Helper to format filter for display
+function formatFilter(filter: FilterType): string {
+  const operatorMap: Record<string, string> = {
+    eq: '=',
+    ne: '≠',
+    gt: '>',
+    gte: '≥',
+    lt: '<',
+    lte: '≤',
+    between: 'between',
+    in: 'in',
+    notIn: 'not in',
+    contains: 'contains',
+  };
+  const op = operatorMap[filter.operator] || filter.operator;
+  if (filter.operator === 'between' && filter.value2 !== undefined) {
+    return `${filter.field} ${op} ${filter.value} and ${filter.value2}`;
+  }
+  return `${filter.field} ${op} ${filter.value}`;
+}
 
 interface ScreenerResultsProps {
   screenerId: string;
@@ -9,6 +32,7 @@ interface ScreenerResultsProps {
 
 export function ScreenerResults({ screenerId, onBack }: ScreenerResultsProps) {
   const { data: result, isLoading, error } = useRunScreener(screenerId);
+  const [showFilters, setShowFilters] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -33,11 +57,34 @@ export function ScreenerResults({ screenerId, onBack }: ScreenerResultsProps) {
       {/* Stats */}
       {result && (
         <div className="flex flex-wrap gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-700 flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {result.screener.filters.length} filters applied
-            </span>
+          <div className="relative">
+            <button
+              onMouseEnter={() => setShowFilters(true)}
+              onMouseLeave={() => setShowFilters(false)}
+              onClick={() => setShowFilters(!showFilters)}
+              className="bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-700 flex items-center gap-2 hover:border-primary-300 dark:hover:border-primary-600 transition-colors"
+            >
+              <Filter className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {result.screener.filters.length} filters applied
+              </span>
+              <Info className="w-3 h-3 text-gray-400" />
+            </button>
+            {/* Filter Tooltip */}
+            {showFilters && result.screener.filters.length > 0 && (
+              <div className="absolute top-full left-0 mt-2 z-50 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3 min-w-[280px]">
+                <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                  Applied Filters
+                </div>
+                <ul className="space-y-1">
+                  {result.screener.filters.map((filter, idx) => (
+                    <li key={idx} className="text-sm text-gray-700 dark:text-gray-300 font-mono bg-gray-50 dark:bg-gray-900 rounded px-2 py-1">
+                      {formatFilter(filter)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           <div className="bg-white dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-700 flex items-center gap-2">
             <span className="text-sm font-medium text-primary-600 dark:text-primary-400">
