@@ -179,3 +179,102 @@ func TestGetAllScreeners(t *testing.T) {
 	assert.True(t, response["success"].(bool))
 	assert.Equal(t, float64(12), response["count"], "Should have 12 screeners")
 }
+
+func TestScreenerMarketAdjustments(t *testing.T) {
+	router, handler := setupTestRouter()
+	router.GET("/screeners/:name", handler.RunScreener)
+
+	t.Run("USA screeners are not adjusted", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/screeners/small-cap-growth?country=USA", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.True(t, response["success"].(bool))
+
+		// USA should not be adjusted
+		assert.False(t, response["adjusted"].(bool), "USA should not be adjusted")
+	})
+
+	t.Run("Israel screeners are adjusted with correct multiplier", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/screeners/small-cap-growth?country=Israel", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.True(t, response["success"].(bool))
+
+		// Israel should be adjusted
+		assert.True(t, response["adjusted"].(bool), "Israel should be adjusted")
+
+		// Check market profile
+		profile := response["marketProfile"].(map[string]interface{})
+		assert.Equal(t, "Israel", profile["country"])
+		assert.Equal(t, 0.1, profile["marketCapMultiplier"], "Israel should have 0.1x market cap multiplier")
+	})
+
+	t.Run("UK screeners are adjusted with correct multiplier", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/screeners/high-beta-bulls?country=UK", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+
+		// UK should be adjusted
+		assert.True(t, response["adjusted"].(bool), "UK should be adjusted")
+
+		// Check market profile
+		profile := response["marketProfile"].(map[string]interface{})
+		assert.Equal(t, "UK", profile["country"])
+		assert.Equal(t, 0.5, profile["marketCapMultiplier"], "UK should have 0.5x market cap multiplier")
+	})
+
+	t.Run("Can disable adjustments with adjust=false", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/screeners/small-cap-growth?country=Israel&adjust=false", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+
+		// Should not be adjusted when explicitly disabled
+		assert.False(t, response["adjusted"].(bool), "Should not be adjusted when adjust=false")
+	})
+
+	t.Run("All supported markets have correct profiles", func(t *testing.T) {
+		countries := []string{"Israel", "UK", "Germany", "Japan", "China", "India", "Brazil", "Canada", "Switzerland", "France", "Australia"}
+
+		for _, country := range countries {
+			req := httptest.NewRequest(http.MethodGet, "/screeners/piotroski-high-score?country="+country, nil)
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusOK, w.Code, "Should succeed for "+country)
+
+			var response map[string]interface{}
+			err := json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(t, err)
+			assert.True(t, response["adjusted"].(bool), country+" should be adjusted")
+
+			profile := response["marketProfile"].(map[string]interface{})
+			assert.Equal(t, country, profile["country"], "Profile country should match")
+			assert.Greater(t, profile["marketCapMultiplier"].(float64), 0.0, "Multiplier should be positive for "+country)
+			t.Logf("%s: marketCapMultiplier=%.2f", country, profile["marketCapMultiplier"].(float64))
+		}
+	})
+}

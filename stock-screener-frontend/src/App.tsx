@@ -5,6 +5,7 @@ import { Header } from './components/Layout/Header';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { ScreenerResults } from './components/Screeners/ScreenerResults';
 import { CustomScreener } from './components/Screeners/CustomScreener';
+import { ScreenerTweaker } from './components/Screeners/ScreenerTweaker';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,7 +16,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type Page = 'dashboard' | 'screeners' | 'custom' | 'screener-results';
+type Page = 'dashboard' | 'screeners' | 'custom' | 'screener-results' | 'screener-tweaker';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -28,6 +29,12 @@ function AppContent() {
     setCurrentPage('screener-results');
   };
 
+  const handleCustomizeScreener = (screenerId: string, country?: string) => {
+    setSelectedScreener(screenerId);
+    setSelectedCountry(country);
+    setCurrentPage('screener-tweaker');
+  };
+
   const handleBack = () => {
     setSelectedScreener(null);
     setSelectedCountry(undefined);
@@ -36,8 +43,9 @@ function AppContent() {
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page as Page);
-    if (page !== 'screener-results') {
+    if (page !== 'screener-results' && page !== 'screener-tweaker') {
       setSelectedScreener(null);
+      setSelectedCountry(undefined);
     }
   };
 
@@ -49,14 +57,17 @@ function AppContent() {
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentPage === 'dashboard' && (
-          <Dashboard onSelectScreener={handleSelectScreener} />
+          <Dashboard onSelectScreener={handleSelectScreener} onCustomizeScreener={handleCustomizeScreener} />
         )}
         {currentPage === 'screeners' && (
-          <Dashboard onSelectScreener={handleSelectScreener} />
+          <Dashboard onSelectScreener={handleSelectScreener} onCustomizeScreener={handleCustomizeScreener} />
         )}
         {currentPage === 'custom' && <CustomScreener />}
         {currentPage === 'screener-results' && selectedScreener && (
           <ScreenerResults screenerId={selectedScreener} country={selectedCountry} onBack={handleBack} />
+        )}
+        {currentPage === 'screener-tweaker' && selectedScreener && (
+          <ScreenerTweaker screenerId={selectedScreener} country={selectedCountry} onBack={handleBack} />
         )}
       </main>
       <footer className="border-t border-gray-200 dark:border-gray-800 py-6 mt-8">

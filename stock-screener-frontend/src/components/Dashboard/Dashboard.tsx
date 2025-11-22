@@ -13,6 +13,7 @@ import {
   Star,
   Sprout,
   Globe,
+  Sliders,
 } from 'lucide-react';
 import { useScreeners } from '../../hooks/useScreener';
 import { useSectorPerformance } from '../../hooks/useStocks';
@@ -63,9 +64,10 @@ const categoryColors: Record<string, string> = {
 
 interface DashboardProps {
   onSelectScreener: (screenerId: string, country?: string) => void;
+  onCustomizeScreener?: (screenerId: string, country?: string) => void;
 }
 
-export function Dashboard({ onSelectScreener }: DashboardProps) {
+export function Dashboard({ onSelectScreener, onCustomizeScreener }: DashboardProps) {
   const [selectedCountry, setSelectedCountry] = useState('All');
   const { data: screeners, isLoading: screenersLoading } = useScreeners();
   const { data: sectors, isLoading: sectorsLoading } = useSectorPerformance();
@@ -73,6 +75,11 @@ export function Dashboard({ onSelectScreener }: DashboardProps) {
   const handleScreenerClick = (screenerId: string) => {
     // Pass the selected country along with the screener ID
     onSelectScreener(screenerId, selectedCountry !== 'All' ? selectedCountry : undefined);
+  };
+
+  const handleCustomizeClick = (e: React.MouseEvent, screenerId: string) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    onCustomizeScreener?.(screenerId, selectedCountry !== 'All' ? selectedCountry : undefined);
   };
 
   return (
@@ -190,35 +197,49 @@ export function Dashboard({ onSelectScreener }: DashboardProps) {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {screeners?.map((screener) => (
-              <button
+              <div
                 key={screener.id}
-                onClick={() => handleScreenerClick(screener.id)}
-                className="text-left bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
+                className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
               >
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-primary-600 dark:text-primary-400 group-hover:bg-primary-200 dark:group-hover:bg-primary-800/30 transition-colors">
-                    {iconMap[screener.icon || 'search'] || <BarChart3 className="w-5 h-5" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400">
-                      {screener.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                      {screener.description}
-                    </p>
-                    <div className="mt-2">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                          categoryColors[screener.category] ||
-                          'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                        }`}
-                      >
-                        {screener.category}
-                      </span>
+                <button
+                  onClick={() => handleScreenerClick(screener.id)}
+                  className="text-left w-full"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-primary-600 dark:text-primary-400 group-hover:bg-primary-200 dark:group-hover:bg-primary-800/30 transition-colors">
+                      {iconMap[screener.icon || 'search'] || <BarChart3 className="w-5 h-5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                        {screener.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                        {screener.description}
+                      </p>
                     </div>
                   </div>
+                </button>
+                <div className="mt-3 flex items-center justify-between">
+                  <span
+                    className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                      categoryColors[screener.category] ||
+                      'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {screener.category}
+                  </span>
+                  {onCustomizeScreener && (
+                    <button
+                      onClick={(e) => handleCustomizeClick(e, screener.id)}
+                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      title="Customize this screener"
+                    >
+                      <Sliders className="w-3.5 h-3.5" />
+                      Customize
+                    </button>
+                  )}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         )}

@@ -65,6 +65,7 @@ func (h *ScreenerHandler) GetScreenersSummary(c *gin.Context) {
 // @Param name path string true "Screener ID"
 // @Param country query string false "Filter by country (e.g., USA, Israel, UK)"
 // @Param sector query string false "Filter by sector (e.g., Technology, Healthcare)"
+// @Param adjust query bool false "Adjust screener thresholds for market (default: true)"
 // @Success 200 {object} models.ScreenerResult
 // @Failure 404 {object} map[string]interface{}
 // @Router /api/v1/screeners/{name} [get]
@@ -72,6 +73,8 @@ func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 	screenerID := c.Param("name")
 	country := c.Query("country")
 	sector := c.Query("sector")
+	adjustParam := c.DefaultQuery("adjust", "true")
+	shouldAdjust := adjustParam == "true"
 
 	screener, found := h.engine.GetScreenerByID(screenerID)
 	if !found {
@@ -84,6 +87,11 @@ func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 
 	// Create a copy of the screener to add additional filters
 	screenerCopy := *screener
+
+	// Adjust screener thresholds for the target market
+	if shouldAdjust && country != "" && country != "USA" {
+		screenerCopy = models.AdjustScreenerForMarket(screenerCopy, country)
+	}
 
 	// Add country filter if specified
 	if country != "" {
@@ -112,9 +120,17 @@ func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 		return
 	}
 
+	// Include market profile info in response
+	var marketProfile *models.MarketProfile
+	if country != "" {
+		marketProfile = models.GetMarketProfile(country)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"result":  result,
+		"success":       true,
+		"result":        result,
+		"marketProfile": marketProfile,
+		"adjusted":      shouldAdjust && country != "" && country != "USA",
 	})
 }
 
