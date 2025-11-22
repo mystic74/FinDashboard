@@ -13,8 +13,10 @@ import (
 // ScreenerEngine handles stock screening operations
 type ScreenerEngine struct {
 	yahooService *YahooFinanceService
+	mockService  *MockDataService
 	cache        *CacheService
 	stockUniverse []string
+	demoMode     bool
 }
 
 // NewScreenerEngine creates a new screener engine
@@ -23,7 +25,39 @@ func NewScreenerEngine(yahooService *YahooFinanceService, cache *CacheService) *
 		yahooService:  yahooService,
 		cache:         cache,
 		stockUniverse: GetDefaultStockSymbols(),
+		demoMode:      false,
 	}
+}
+
+// NewScreenerEngineWithDemo creates a screener engine in demo mode
+func NewScreenerEngineWithDemo(cache *CacheService) *ScreenerEngine {
+	return &ScreenerEngine{
+		mockService:   NewMockDataService(),
+		cache:         cache,
+		stockUniverse: GetDefaultStockSymbols(),
+		demoMode:      true,
+	}
+}
+
+// SetDemoMode enables or disables demo mode
+func (e *ScreenerEngine) SetDemoMode(enabled bool) {
+	e.demoMode = enabled
+	if enabled && e.mockService == nil {
+		e.mockService = NewMockDataService()
+	}
+}
+
+// IsDemoMode returns whether demo mode is enabled
+func (e *ScreenerEngine) IsDemoMode() bool {
+	return e.demoMode
+}
+
+// getStocks fetches stocks from the appropriate source
+func (e *ScreenerEngine) getStocks() ([]models.Stock, error) {
+	if e.demoMode {
+		return e.mockService.GetAllStocks(), nil
+	}
+	return e.yahooService.GetQuotes(e.stockUniverse)
 }
 
 // SetStockUniverse updates the stock universe for screening
@@ -41,17 +75,19 @@ func (e *ScreenerEngine) RunScreener(ctx context.Context, screener models.Screen
 	startTime := time.Now()
 
 	// Fetch all stocks
-	stocks, err := e.yahooService.GetQuotes(e.stockUniverse)
+	stocks, err := e.getStocks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch stocks: %w", err)
 	}
 
-	// Enrich with fundamentals for complex screeners
-	needsFundamentals := e.screenerNeedsFundamentals(screener)
-	if needsFundamentals {
-		stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
+	// Enrich with fundamentals for complex screeners (only in non-demo mode)
+	if !e.demoMode {
+		needsFundamentals := e.screenerNeedsFundamentals(screener)
+		if needsFundamentals {
+			stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
+			}
 		}
 	}
 
@@ -83,24 +119,26 @@ func (e *ScreenerEngine) RunScreener(ctx context.Context, screener models.Screen
 // RunCustomScreener runs a custom screener with arbitrary filters
 func (e *ScreenerEngine) RunCustomScreener(ctx context.Context, request models.FilterRequest) (*models.FilterResponse, error) {
 	// Fetch stocks
-	stocks, err := e.yahooService.GetQuotes(e.stockUniverse)
+	stocks, err := e.getStocks()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch stocks: %w", err)
 	}
 
-	// Check if we need fundamentals
-	needsFundamentals := false
-	for _, filter := range request.Filters {
-		if e.filterNeedsFundamentals(filter.Field) {
-			needsFundamentals = true
-			break
+	// Check if we need fundamentals (only in non-demo mode)
+	if !e.demoMode {
+		needsFundamentals := false
+		for _, filter := range request.Filters {
+			if e.filterNeedsFundamentals(filter.Field) {
+				needsFundamentals = true
+				break
+			}
 		}
-	}
 
-	if needsFundamentals {
-		stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
+		if needsFundamentals {
+			stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
+			}
 		}
 	}
 
@@ -429,7 +467,7 @@ func (e *ScreenerEngine) GetQuickScreenResults(ctx context.Context, screenerID s
 
 // GetSectorPerformance returns performance by sector
 func (e *ScreenerEngine) GetSectorPerformance(ctx context.Context) ([]models.SectorPerformance, error) {
-	stocks, err := e.yahooService.GetQuotes(e.stockUniverse)
+	stocks, err := e.getStocks()
 	if err != nil {
 		return nil, err
 	}

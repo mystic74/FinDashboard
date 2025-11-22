@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"stock-screener/api/handlers"
 	"stock-screener/config"
 	"stock-screener/services"
@@ -34,8 +36,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 
 	// Initialize services
 	cacheService := services.NewCacheService(cfg.CacheTTL, 10*time.Minute)
+
+	// Check for demo mode (default: true for easier testing)
+	demoMode := os.Getenv("DEMO_MODE") != "false"
+
+	var screenerEngine *services.ScreenerEngine
+	if demoMode {
+		log.Println("Running in DEMO MODE with mock data")
+		screenerEngine = services.NewScreenerEngineWithDemo(cacheService)
+	} else {
+		log.Println("Running in LIVE MODE with Yahoo Finance API")
+		yahooService := services.NewYahooFinanceService(cacheService)
+		screenerEngine = services.NewScreenerEngine(yahooService, cacheService)
+	}
+
+	// Yahoo service needed for stock handler (even in demo mode, just won't work)
 	yahooService := services.NewYahooFinanceService(cacheService)
-	screenerEngine := services.NewScreenerEngine(yahooService, cacheService)
 
 	// Initialize handlers
 	screenerHandler := handlers.NewScreenerHandler(screenerEngine)
@@ -47,6 +63,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		c.JSON(http.StatusOK, gin.H{
 			"status":    "healthy",
 			"timestamp": time.Now().Format(time.RFC3339),
+			"demoMode":  demoMode,
 		})
 	})
 

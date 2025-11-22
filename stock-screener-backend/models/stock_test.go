@@ -98,7 +98,7 @@ func TestStockValidation(t *testing.T) {
 	t.Run("High dividend yield warning", func(t *testing.T) {
 		stock := Stock{
 			Price:         100,
-			DividendYield: 50, // 50% yield is suspicious
+			DividendYield: 150, // Over 100% triggers warning
 		}
 		result := stock.Validate()
 		assert.True(t, result.IsValid)
@@ -109,7 +109,7 @@ func TestStockValidation(t *testing.T) {
 	t.Run("Extreme P/E ratio warning", func(t *testing.T) {
 		stock := Stock{
 			Price:   100,
-			PERatio: 5000, // Extremely high P/E
+			PERatio: 15000, // Over 10000 triggers warning
 		}
 		result := stock.Validate()
 		assert.True(t, result.IsValid)

@@ -1,0 +1,28 @@
+version: '3.8'
+
+# Development overrides - use with:
+# docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    build:
+      context: ./stock-screener-backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./stock-screener-backend:/app
+    environment:
+      - GIN_MODE=debug
+      - PORT=8080
+      - CORS_ORIGIN=http://localhost:5173
+
+  frontend:
+    build:
+      context: ./stock-screener-frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./stock-screener-frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8080
