@@ -20,14 +20,17 @@ type Page = 'dashboard' | 'screeners' | 'custom' | 'screener-results';
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [selectedScreener, setSelectedScreener] = useState<string | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<string | undefined>(undefined);
 
-  const handleSelectScreener = (screenerId: string) => {
+  const handleSelectScreener = (screenerId: string, country?: string) => {
     setSelectedScreener(screenerId);
+    setSelectedCountry(country);
     setCurrentPage('screener-results');
   };
 
   const handleBack = () => {
     setSelectedScreener(null);
+    setSelectedCountry(undefined);
     setCurrentPage('dashboard');
   };
 
@@ -53,7 +56,7 @@ function AppContent() {
         )}
         {currentPage === 'custom' && <CustomScreener />}
         {currentPage === 'screener-results' && selectedScreener && (
-          <ScreenerResults screenerId={selectedScreener} onBack={handleBack} />
+          <ScreenerResults screenerId={selectedScreener} country={selectedCountry} onBack={handleBack} />
         )}
       </main>
       <footer className="border-t border-gray-200 dark:border-gray-800 py-6 mt-8">

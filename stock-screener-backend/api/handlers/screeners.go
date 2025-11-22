@@ -63,11 +63,15 @@ func (h *ScreenerHandler) GetScreenersSummary(c *gin.Context) {
 // @Tags Screeners
 // @Produce json
 // @Param name path string true "Screener ID"
+// @Param country query string false "Filter by country (e.g., USA, Israel, UK)"
+// @Param sector query string false "Filter by sector (e.g., Technology, Healthcare)"
 // @Success 200 {object} models.ScreenerResult
 // @Failure 404 {object} map[string]interface{}
 // @Router /api/v1/screeners/{name} [get]
 func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 	screenerID := c.Param("name")
+	country := c.Query("country")
+	sector := c.Query("sector")
 
 	screener, found := h.engine.GetScreenerByID(screenerID)
 	if !found {
@@ -78,7 +82,28 @@ func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 		return
 	}
 
-	result, err := h.engine.RunScreener(c.Request.Context(), *screener)
+	// Create a copy of the screener to add additional filters
+	screenerCopy := *screener
+
+	// Add country filter if specified
+	if country != "" {
+		screenerCopy.Filters = append(screenerCopy.Filters, models.Filter{
+			Field:    "country",
+			Operator: models.OpEquals,
+			Value:    country,
+		})
+	}
+
+	// Add sector filter if specified
+	if sector != "" {
+		screenerCopy.Filters = append(screenerCopy.Filters, models.Filter{
+			Field:    "sector",
+			Operator: models.OpEquals,
+			Value:    sector,
+		})
+	}
+
+	result, err := h.engine.RunScreener(c.Request.Context(), screenerCopy)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,

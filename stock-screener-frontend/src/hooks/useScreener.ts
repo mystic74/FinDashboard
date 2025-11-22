@@ -18,10 +18,15 @@ export function useScreenerSummaries() {
   });
 }
 
-export function useRunScreener(screenerId: string, enabled: boolean = true) {
+export function useRunScreener(
+  screenerId: string,
+  country?: string,
+  sector?: string,
+  enabled: boolean = true
+) {
   return useQuery<ScreenerResult>({
-    queryKey: ['screener-result', screenerId],
-    queryFn: () => screenerApi.run(screenerId),
+    queryKey: ['screener-result', screenerId, country, sector],
+    queryFn: () => screenerApi.run(screenerId, country, sector),
     enabled: enabled && !!screenerId,
     staleTime: 2 * 60 * 1000,
   });

@@ -27,11 +27,12 @@ function formatFilter(filter: FilterType): string {
 
 interface ScreenerResultsProps {
   screenerId: string;
+  country?: string;
   onBack: () => void;
 }
 
-export function ScreenerResults({ screenerId, onBack }: ScreenerResultsProps) {
-  const { data: result, isLoading, error } = useRunScreener(screenerId);
+export function ScreenerResults({ screenerId, country, onBack }: ScreenerResultsProps) {
+  const { data: result, isLoading, error } = useRunScreener(screenerId, country);
   const [showFilters, setShowFilters] = useState(false);
 
   return (
@@ -57,6 +58,13 @@ export function ScreenerResults({ screenerId, onBack }: ScreenerResultsProps) {
       {/* Stats */}
       {result && (
         <div className="flex flex-wrap gap-4">
+          {country && (
+            <div className="bg-primary-100 dark:bg-primary-900/30 rounded-lg px-4 py-2 border border-primary-200 dark:border-primary-700 flex items-center gap-2">
+              <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                Filtered by: {country}
+              </span>
+            </div>
+          )}
           <div className="relative">
             <button
               onMouseEnter={() => setShowFilters(true)}

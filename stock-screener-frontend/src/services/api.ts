@@ -42,8 +42,11 @@ export const screenerApi = {
     return data.summaries;
   },
 
-  run: async (screenerId: string): Promise<ScreenerResult> => {
-    const { data } = await api.get(`/screeners/${screenerId}`);
+  run: async (screenerId: string, country?: string, sector?: string): Promise<ScreenerResult> => {
+    const params: Record<string, string> = {};
+    if (country) params.country = country;
+    if (sector) params.sector = sector;
+    const { data } = await api.get(`/screeners/${screenerId}`, { params });
     return data.result;
   },
 
