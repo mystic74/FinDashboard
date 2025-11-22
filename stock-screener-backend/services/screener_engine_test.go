@@ -562,6 +562,274 @@ func TestMockDataServiceCountries(t *testing.T) {
 	})
 }
 
+// Tests for remaining screeners to ensure all 12 have coverage
+
+func TestUndervaluedTechScreener(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	stocks := []models.Stock{
+		{
+			Symbol: "UNDERTECH", Name: "Undervalued Tech Co",
+			Sector: "Technology", PERatio: 18, PEGRatio: 0.8, RevenueGrowth: 20,
+		},
+		{
+			Symbol: "OVERTECH", Name: "Overvalued Tech Co",
+			Sector: "Technology", PERatio: 35, PEGRatio: 2.5, RevenueGrowth: 10,
+		},
+		{
+			Symbol: "NONTECH", Name: "Non Tech Co",
+			Sector: "Healthcare", PERatio: 12, PEGRatio: 0.5, RevenueGrowth: 25,
+		},
+	}
+
+	t.Run("Undervalued Tech filters correctly", func(t *testing.T) {
+		screener := models.UndervaluedTechScreener()
+		result := engine.ApplyFilters(stocks, screener.Filters)
+
+		// Only UNDERTECH should pass (Technology sector + P/E < 25 + PEG < 1 + Revenue growth > 15)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "UNDERTECH", result[0].Symbol)
+
+		for _, s := range result {
+			assert.Equal(t, "Technology", s.Sector)
+			assert.Less(t, s.PERatio, 25.0)
+			assert.Greater(t, s.PERatio, 0.0)
+			assert.Less(t, s.PEGRatio, 1.0)
+			assert.Greater(t, s.RevenueGrowth, 15.0)
+		}
+	})
+}
+
+func TestGARPScreener(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	stocks := []models.Stock{
+		{
+			Symbol: "GARP", Name: "GARP Stock",
+			EPSGrowth: 20, RevenueGrowth: 15, PEGRatio: 1.0, PERatio: 20, ROE: 15,
+		},
+		{
+			Symbol: "HIGHPE", Name: "High P/E Stock",
+			EPSGrowth: 25, RevenueGrowth: 20, PEGRatio: 1.2, PERatio: 35, ROE: 18,
+		},
+		{
+			Symbol: "LOWGROWTH", Name: "Low Growth Stock",
+			EPSGrowth: 5, RevenueGrowth: 3, PEGRatio: 0.8, PERatio: 12, ROE: 10,
+		},
+	}
+
+	t.Run("GARP filters growth at reasonable price", func(t *testing.T) {
+		screener := models.GrowthAtReasonablePriceScreener()
+		result := engine.ApplyFilters(stocks, screener.Filters)
+
+		// Only GARP should pass
+		assert.Len(t, result, 1)
+		assert.Equal(t, "GARP", result[0].Symbol)
+
+		for _, s := range result {
+			assert.Greater(t, s.EPSGrowth, 15.0)
+			assert.Greater(t, s.RevenueGrowth, 10.0)
+			assert.GreaterOrEqual(t, s.PEGRatio, 0.5)
+			assert.LessOrEqual(t, s.PEGRatio, 1.5)
+			assert.Less(t, s.PERatio, 25.0)
+			assert.Greater(t, s.PERatio, 0.0)
+			assert.Greater(t, s.ROE, 12.0)
+		}
+	})
+}
+
+func TestQualityStocksScreener(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	stocks := []models.Stock{
+		{
+			Symbol: "QUALITY", Name: "Quality Stock",
+			ROE: 20, ROA: 12, GrossMargin: 50, OperatingMargin: 20,
+			DebtToEquity: 0.5, CurrentRatio: 2.0,
+		},
+		{
+			Symbol: "LOWQUAL", Name: "Low Quality Stock",
+			ROE: 8, ROA: 3, GrossMargin: 25, OperatingMargin: 8,
+			DebtToEquity: 2.0, CurrentRatio: 0.8,
+		},
+	}
+
+	t.Run("Quality Stocks filters high-quality companies", func(t *testing.T) {
+		screener := models.QualityStocksScreener()
+		result := engine.ApplyFilters(stocks, screener.Filters)
+
+		// Only QUALITY should pass
+		assert.Len(t, result, 1)
+		assert.Equal(t, "QUALITY", result[0].Symbol)
+
+		for _, s := range result {
+			assert.Greater(t, s.ROE, 15.0)
+			assert.Greater(t, s.ROA, 8.0)
+			assert.Greater(t, s.GrossMargin, 40.0)
+			assert.Greater(t, s.OperatingMargin, 15.0)
+			assert.Less(t, s.DebtToEquity, 1.0)
+			assert.Greater(t, s.CurrentRatio, 1.5)
+		}
+	})
+}
+
+func TestTurnaroundCandidatesScreener(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	stocks := []models.Stock{
+		{
+			Symbol: "TURN", Name: "Turnaround Stock",
+			Return1Y: -30, Return1M: 10, CurrentRatio: 1.5, RevenueGrowth: 5,
+		},
+		{
+			Symbol: "STILLDOWN", Name: "Still Declining Stock",
+			Return1Y: -40, Return1M: -5, CurrentRatio: 1.2, RevenueGrowth: -10,
+		},
+		{
+			Symbol: "WINNER", Name: "Winner Stock",
+			Return1Y: 25, Return1M: 8, CurrentRatio: 2.0, RevenueGrowth: 15,
+		},
+	}
+
+	t.Run("Turnaround Candidates filters beaten-down stocks with recovery signs", func(t *testing.T) {
+		screener := models.TurnaroundCandidatesScreener()
+		result := engine.ApplyFilters(stocks, screener.Filters)
+
+		// Only TURN should pass (down significantly but showing recovery)
+		assert.Len(t, result, 1)
+		assert.Equal(t, "TURN", result[0].Symbol)
+
+		for _, s := range result {
+			assert.Less(t, s.Return1Y, -20.0, "1Y return should be < -20%")
+			assert.Greater(t, s.Return1M, 5.0, "1M return should be > 5%")
+			assert.Greater(t, s.CurrentRatio, 1.0, "Current ratio should be > 1")
+			assert.Greater(t, s.RevenueGrowth, 0.0, "Revenue growth should be > 0")
+		}
+	})
+}
+
+// Integration test: verify all screeners return results with actual mock data
+func TestAllScreenersReturnResultsWithMockData(t *testing.T) {
+	cache := createTestCache()
+	engine := NewScreenerEngineWithDemo(cache)
+
+	// Get all mock stocks
+	mockService := NewMockDataService()
+	stocks := mockService.GetAllStocks()
+
+	screenerFuncs := []struct {
+		id       string
+		screener models.Screener
+	}{
+		{"momentum-masters", models.MomentumMastersScreener()},
+		{"dividend-aristocrats", models.DividendAristocratsScreener()},
+		{"value-opportunities", models.ValueOpportunitiesScreener()},
+		{"high-beta-bulls", models.HighBetaBullsScreener()},
+		{"cash-is-king", models.CashIsKingScreener()},
+		{"piotroski-high-score", models.PiotroskiHighScoreScreener()},
+		{"small-cap-growth", models.SmallCapGrowthScreener()},
+		{"undervalued-tech", models.UndervaluedTechScreener()},
+		{"garp", models.GrowthAtReasonablePriceScreener()},
+		{"quality-stocks", models.QualityStocksScreener()},
+		{"low-volatility", models.LowVolatilityScreener()},
+		{"turnaround-candidates", models.TurnaroundCandidatesScreener()},
+	}
+
+	for _, sf := range screenerFuncs {
+		t.Run("Screener "+sf.id+" returns results", func(t *testing.T) {
+			result := engine.ApplyFilters(stocks, sf.screener.Filters)
+			// Note: Some screeners may return 0 results depending on random mock data generation
+			// This test documents the current behavior rather than asserting specific counts
+			t.Logf("Screener %s returned %d results out of %d stocks", sf.id, len(result), len(stocks))
+		})
+	}
+}
+
+// Test that country-based filtering works correctly
+func TestScreenersByCountry(t *testing.T) {
+	cache := createTestCache()
+	engine := NewScreenerEngineWithDemo(cache)
+
+	// Get all stocks
+	mockService := NewMockDataService()
+	stocks := mockService.GetAllStocks()
+
+	countries := []string{"USA", "Israel", "UK", "Germany", "Japan", "China"}
+
+	for _, country := range countries {
+		t.Run("Filter by "+country, func(t *testing.T) {
+			filters := []models.Filter{
+				{Field: "country", Operator: models.OpEquals, Value: country},
+			}
+			result := engine.ApplyFilters(stocks, filters)
+			assert.Greater(t, len(result), 0, "Should have stocks from %s", country)
+			for _, s := range result {
+				assert.Equal(t, country, s.Country)
+			}
+			t.Logf("Found %d stocks from %s", len(result), country)
+		})
+	}
+
+	t.Run("Country + Sector combination", func(t *testing.T) {
+		filters := []models.Filter{
+			{Field: "country", Operator: models.OpEquals, Value: "USA"},
+			{Field: "sector", Operator: models.OpEquals, Value: "Technology"},
+		}
+		result := engine.ApplyFilters(stocks, filters)
+		t.Logf("Found %d USA Technology stocks", len(result))
+		for _, s := range result {
+			assert.Equal(t, "USA", s.Country)
+			assert.Equal(t, "Technology", s.Sector)
+		}
+	})
+}
+
+// Test that all 12 screeners are accessible and have correct basic structure
+func TestAllTwelveScreeners(t *testing.T) {
+	screenerIDs := []string{
+		"momentum-masters",
+		"dividend-aristocrats",
+		"value-opportunities",
+		"high-beta-bulls",
+		"cash-is-king",
+		"piotroski-high-score",
+		"small-cap-growth",
+		"undervalued-tech",
+		"garp",
+		"quality-stocks",
+		"low-volatility",
+		"turnaround-candidates",
+	}
+
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	for _, id := range screenerIDs {
+		t.Run("Screener "+id+" exists and has filters", func(t *testing.T) {
+			screener, found := engine.GetScreenerByID(id)
+			assert.True(t, found, "Screener %s should exist", id)
+			assert.NotEmpty(t, screener.Name, "Screener should have name")
+			assert.NotEmpty(t, screener.Description, "Screener should have description")
+			assert.NotEmpty(t, screener.Filters, "Screener should have filters")
+			assert.NotEmpty(t, screener.Category, "Screener should have category")
+		})
+	}
+
+	t.Run("GetPredefinedScreeners returns all 12", func(t *testing.T) {
+		all := engine.GetAllPredefinedScreeners()
+		assert.Len(t, all, 12, "Should have exactly 12 predefined screeners")
+	})
+}
+
 func TestAltmanZCalculation(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -135,8 +135,22 @@ func (m *MockDataService) generateMockStocks() {
 		{"WIX", "Wix.com Ltd", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 142.35, 8200000000},
 		{"MNDY", "monday.com Ltd", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 195.22, 9500000000},
 		{"GLBE", "Global-e Online", "Technology", "Internet Retail", "Israel", "NASDAQ", "USD", 38.45, 6500000000},
-		{"LPSN", "LivePerson Inc", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 3.22, 350000000},
+		{"LPSN", "LivePerson Inc", "Technology", "Software - Application", "Israel", "NASDAQ", "USD", 3.22, 450000000},
 		{"FVRR", "Fiverr International", "Technology", "Internet Content & Information", "Israel", "NYSE", "USD", 25.88, 920000000},
+
+		// =====================================================================
+		// Small Cap Growth Stocks (300M - 2B market cap range)
+		// =====================================================================
+		{"PTON", "Peloton Interactive", "Consumer Cyclical", "Leisure", "USA", "NASDAQ", "USD", 5.45, 1800000000},
+		{"UPST", "Upstart Holdings", "Financial Services", "Credit Services", "USA", "NASDAQ", "USD", 28.55, 1500000000},
+		{"AFRM", "Affirm Holdings", "Financial Services", "Credit Services", "USA", "NASDAQ", "USD", 15.88, 800000000},
+		{"DKNG", "DraftKings Inc", "Consumer Cyclical", "Gambling", "USA", "NASDAQ", "USD", 35.42, 1200000000},
+		{"STEM", "Stem Inc", "Industrials", "Electrical Equipment", "USA", "NYSE", "USD", 3.88, 550000000},
+		{"RKLB", "Rocket Lab USA", "Industrials", "Aerospace & Defense", "USA", "NASDAQ", "USD", 8.45, 1100000000},
+		{"DNA", "Ginkgo Bioworks", "Healthcare", "Biotechnology", "USA", "NYSE", "USD", 1.25, 650000000},
+		{"IONQ", "IonQ Inc", "Technology", "Computer Hardware", "USA", "NYSE", "USD", 12.55, 950000000},
+		{"PSFE", "Paysafe Limited", "Financial Services", "Credit Services", "USA", "NYSE", "USD", 15.22, 800000000},
+		{"SMCI", "Super Micro Computer", "Technology", "Computer Hardware", "USA", "NASDAQ", "USD", 285.42, 1900000000},
 		{"LEUMI.TA", "Bank Leumi", "Financial Services", "Banks - Regional", "Israel", "TASE", "ILS", 34.55, 48000000000},
 		{"HAPOALIM.TA", "Bank Hapoalim", "Financial Services", "Banks - Regional", "Israel", "TASE", "ILS", 38.22, 52000000000},
 		{"ICL", "ICL Group", "Basic Materials", "Agricultural Inputs", "Israel", "NYSE", "USD", 5.45, 7000000000},
@@ -289,8 +303,21 @@ func (m *MockDataService) generateStock(symbol, name, sector, industry, country,
 	currentRatio := 1.0 + rand.Float64()*2.5 // Range: 1.0 to 3.5 for better Cash is King coverage
 	debtToEquity := rand.Float64() * 2
 
-	revenueGrowth := -10 + rand.Float64()*40
-	epsGrowth := -20 + rand.Float64()*50
+	revenueGrowth := -10 + rand.Float64()*50 // -10% to +40% (wider range for growth stocks)
+	epsGrowth := -20 + rand.Float64()*60     // -20% to +40% (wider range for growth stocks)
+	pegRatio := 0.3 + rand.Float64()*2.5 // Range: 0.3 to 2.8 (some under 1 for undervalued tech)
+
+	// Dividend fields for Dividend Aristocrats
+	consecutiveDivYears := 0
+	dividendGrowthYears := 0
+	if dividendYield > 1.5 {
+		// Higher yield stocks more likely to have dividend history
+		consecutiveDivYears = int(5 + rand.Float64()*20) // 5-25 years
+		dividendGrowthYears = int(3 + rand.Float64()*15) // 3-18 years
+	} else if dividendYield > 0.5 {
+		consecutiveDivYears = int(rand.Float64() * 10) // 0-10 years
+		dividendGrowthYears = int(rand.Float64() * 7)  // 0-7 years
+	}
 
 	// Returns - wider range to include momentum stocks
 	return1W := -5 + rand.Float64()*15    // -5% to +10%
@@ -367,12 +394,14 @@ func (m *MockDataService) generateStock(symbol, name, sector, industry, country,
 		MA200:             round2(price * (0.9 + rand.Float64()*0.2)),
 		PERatio:           round2(peRatio),
 		ForwardPE:         round2(peRatio * (0.8 + rand.Float64()*0.3)),
-		PEGRatio:          round2(1 + rand.Float64()*2),
+		PEGRatio:          round2(pegRatio),
 		PBRatio:           round2(pbRatio),
 		PSRatio:           round2(1 + rand.Float64()*10),
-		DividendYield:     round2(dividendYield),
-		PayoutRatio:       round2(dividendYield * 10 * (0.5 + rand.Float64())),
-		Beta:              round2(beta),
+		DividendYield:       round2(dividendYield),
+		PayoutRatio:         round2(dividendYield * 10 * (0.5 + rand.Float64())),
+		ConsecutiveDivYears: consecutiveDivYears,
+		DividendGrowthYears: dividendGrowthYears,
+		Beta:                round2(beta),
 		ROE:               round2(roe),
 		ROA:               round2(roa),
 		GrossMargin:       round2(grossMargin),

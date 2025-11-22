@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   TrendingUp,
   TrendingDown,
@@ -11,10 +12,31 @@ import {
   RefreshCw,
   Star,
   Sprout,
+  Globe,
 } from 'lucide-react';
 import { useScreeners } from '../../hooks/useScreener';
 import { useSectorPerformance } from '../../hooks/useStocks';
 import { formatPercent, getChangeColor } from '../../utils/formatters';
+
+// Available countries with their flags and market context
+const COUNTRIES = [
+  { code: 'All', name: 'All Markets', flag: '🌍' },
+  { code: 'USA', name: 'United States', flag: '🇺🇸' },
+  { code: 'UK', name: 'United Kingdom', flag: '🇬🇧' },
+  { code: 'Israel', name: 'Israel', flag: '🇮🇱' },
+  { code: 'Germany', name: 'Germany', flag: '🇩🇪' },
+  { code: 'Japan', name: 'Japan', flag: '🇯🇵' },
+  { code: 'China', name: 'China', flag: '🇨🇳' },
+  { code: 'India', name: 'India', flag: '🇮🇳' },
+  { code: 'Brazil', name: 'Brazil', flag: '🇧🇷' },
+  { code: 'Canada', name: 'Canada', flag: '🇨🇦' },
+  { code: 'France', name: 'France', flag: '🇫🇷' },
+  { code: 'Switzerland', name: 'Switzerland', flag: '🇨🇭' },
+  { code: 'Australia', name: 'Australia', flag: '🇦🇺' },
+  { code: 'Netherlands', name: 'Netherlands', flag: '🇳🇱' },
+  { code: 'South Korea', name: 'South Korea', flag: '🇰🇷' },
+  { code: 'Taiwan', name: 'Taiwan', flag: '🇹🇼' },
+];
 
 const iconMap: Record<string, React.ReactNode> = {
   'trending-up': <TrendingUp className="w-5 h-5" />,
@@ -40,15 +62,56 @@ const categoryColors: Record<string, string> = {
 };
 
 interface DashboardProps {
-  onSelectScreener: (screenerId: string) => void;
+  onSelectScreener: (screenerId: string, country?: string) => void;
 }
 
 export function Dashboard({ onSelectScreener }: DashboardProps) {
+  const [selectedCountry, setSelectedCountry] = useState('All');
   const { data: screeners, isLoading: screenersLoading } = useScreeners();
   const { data: sectors, isLoading: sectorsLoading } = useSectorPerformance();
 
+  const handleScreenerClick = (screenerId: string) => {
+    // Pass the selected country along with the screener ID
+    onSelectScreener(screenerId, selectedCountry !== 'All' ? selectedCountry : undefined);
+  };
+
   return (
     <div className="space-y-8">
+      {/* Country Selector */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Globe className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          <h2 className="font-semibold text-gray-900 dark:text-white">Market Region</h2>
+          {selectedCountry !== 'All' && (
+            <span className="text-sm text-primary-600 dark:text-primary-400">
+              Filtering by {COUNTRIES.find(c => c.code === selectedCountry)?.name}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {COUNTRIES.map((country) => (
+            <button
+              key={country.code}
+              onClick={() => setSelectedCountry(country.code)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                selectedCountry === country.code
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+            >
+              <span className="mr-1">{country.flag}</span>
+              {country.code === 'All' ? 'All' : country.code}
+            </button>
+          ))}
+        </div>
+        {selectedCountry !== 'All' && (
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            Screener results will be filtered to show only {COUNTRIES.find(c => c.code === selectedCountry)?.name} stocks.
+            Market cap and other metrics are relative to the local market context.
+          </p>
+        )}
+      </div>
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 rounded-2xl p-8 text-white">
         <h1 className="text-3xl font-bold mb-2">Stock Screener Dashboard</h1>
@@ -129,7 +192,7 @@ export function Dashboard({ onSelectScreener }: DashboardProps) {
             {screeners?.map((screener) => (
               <button
                 key={screener.id}
-                onClick={() => onSelectScreener(screener.id)}
+                onClick={() => handleScreenerClick(screener.id)}
                 className="text-left bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-lg transition-all group"
               >
                 <div className="flex items-start gap-3">
