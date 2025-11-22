@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"time"
 )
 
@@ -10,6 +11,7 @@ type Config struct {
 	ServerPort       string
 	CacheTTL         time.Duration
 	RateLimitPerMin  int
+	DemoMode         bool
 	YahooFinanceURL  string
 	FMPBaseURL       string
 	FMPAPIKey        string
@@ -22,19 +24,35 @@ type Config struct {
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
+	// Parse CORS origins from env (comma-separated)
+	corsOrigins := getEnv("CORS_ORIGIN", "http://localhost:3000,http://localhost:5173")
+	origins := strings.Split(corsOrigins, ",")
+	for i := range origins {
+		origins[i] = strings.TrimSpace(origins[i])
+	}
+
+	// Demo mode: default true unless explicitly set to "false"
+	demoMode := getEnv("DEMO_MODE", "true") != "false"
+
 	return &Config{
-		ServerPort:       getEnv("SERVER_PORT", "8080"),
+		ServerPort:       getEnv("PORT", "8080"),
 		CacheTTL:         5 * time.Minute,
 		RateLimitPerMin:  60,
+		DemoMode:         demoMode,
 		YahooFinanceURL:  "https://query1.finance.yahoo.com",
 		FMPBaseURL:       "https://financialmodelingprep.com/api/v3",
 		FMPAPIKey:        getEnv("FMP_API_KEY", ""),
 		AlphaVantageURL:  "https://www.alphavantage.co/query",
 		AlphaVantageKey:  getEnv("ALPHA_VANTAGE_KEY", ""),
-		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000"},
+		AllowedOrigins:   origins,
 		RequestTimeout:   30 * time.Second,
 		MaxConcurrent:    10,
 	}
+}
+
+// HasAPIKeys returns true if any API keys are configured
+func (c *Config) HasAPIKeys() bool {
+	return c.FMPAPIKey != "" || c.AlphaVantageKey != ""
 }
 
 // getEnv gets an environment variable or returns a default value
