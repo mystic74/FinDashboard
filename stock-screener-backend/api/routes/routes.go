@@ -57,6 +57,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	screenerHandler := handlers.NewScreenerHandler(screenerEngine)
 	stockHandler := handlers.NewStockHandler(yahooService)
 	filterHandler := handlers.NewFilterHandler()
+	profileHandler := handlers.NewProfileHandler()
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
@@ -101,6 +102,16 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Sector routes
 		v1.GET("/sectors", screenerHandler.GetSectorPerformance)
 		v1.GET("/sectors/list", filterHandler.GetSectors)
+
+		// Market Profile routes
+		profiles := v1.Group("/profiles")
+		{
+			profiles.GET("", profileHandler.GetAllProfiles)
+			profiles.POST("/reset", profileHandler.ResetAllProfiles)
+			profiles.GET("/:country", profileHandler.GetProfile)
+			profiles.PUT("/:country", profileHandler.UpdateProfile)
+			profiles.POST("/:country/reset", profileHandler.ResetProfile)
+		}
 	}
 
 	return router

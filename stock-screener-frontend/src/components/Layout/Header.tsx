@@ -1,4 +1,4 @@
-import { Moon, Sun, TrendingUp, Menu, X } from 'lucide-react';
+import { Moon, Sun, TrendingUp, Menu, X, Globe2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -11,6 +11,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'screeners', label: 'Screeners' },
   { id: 'custom', label: 'Custom Screener' },
+  { id: 'profiles', label: 'Market Profiles', icon: Globe2, highlight: true },
 ];
 
 export function Header({ currentPage, onNavigate }: HeaderProps) {
@@ -33,19 +34,26 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  currentPage === item.id
-                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+            {navItems.map((item) => {
+              const Icon = 'icon' in item ? item.icon : null;
+              const isHighlight = 'highlight' in item && item.highlight;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate(item.id)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    currentPage === item.id
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : isHighlight
+                      ? 'text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Actions */}
@@ -73,22 +81,29 @@ export function Header({ currentPage, onNavigate }: HeaderProps) {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
           <nav className="px-4 py-2 space-y-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onNavigate(item.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  currentPage === item.id
-                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
+            {navItems.map((item) => {
+              const Icon = 'icon' in item ? item.icon : null;
+              const isHighlight = 'highlight' in item && item.highlight;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    onNavigate(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    currentPage === item.id
+                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                      : isHighlight
+                      ? 'text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
         </div>
       )}

@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard/Dashboard';
 import { ScreenerResults } from './components/Screeners/ScreenerResults';
 import { CustomScreener } from './components/Screeners/CustomScreener';
 import { ScreenerTweaker } from './components/Screeners/ScreenerTweaker';
+import { MarketProfileEditor } from './components/MarketProfiles/MarketProfileEditor';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,7 +17,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type Page = 'dashboard' | 'screeners' | 'custom' | 'screener-results' | 'screener-tweaker';
+type Page = 'dashboard' | 'screeners' | 'custom' | 'profiles' | 'screener-results' | 'screener-tweaker';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -63,6 +64,7 @@ function AppContent() {
           <Dashboard onSelectScreener={handleSelectScreener} onCustomizeScreener={handleCustomizeScreener} />
         )}
         {currentPage === 'custom' && <CustomScreener />}
+        {currentPage === 'profiles' && <MarketProfileEditor />}
         {currentPage === 'screener-results' && selectedScreener && (
           <ScreenerResults screenerId={selectedScreener} country={selectedCountry} onBack={handleBack} />
         )}
