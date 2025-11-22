@@ -753,6 +753,122 @@ func TestAllScreenersReturnResultsWithMockData(t *testing.T) {
 	}
 }
 
+// createTestStocksForAllScreeners creates hardcoded test data that is GUARANTEED
+// to match each screener's criteria. This ensures deterministic test results.
+func createTestStocksForAllScreeners() []models.Stock {
+	return []models.Stock{
+		// MOMENTUM MASTERS: return1W > 0, return3M > 25, return6M > 25, volume > 100000
+		{
+			Symbol: "MOMENTUM1", Name: "Momentum Stock",
+			Return1W: 5, Return3M: 30, Return6M: 35, Volume: 500000,
+		},
+		// DIVIDEND ARISTOCRATS: dividendYield > 2, payoutRatio < 80, consecutiveDivYears > 10, dividendGrowthYears > 5
+		{
+			Symbol: "DIVIDEND1", Name: "Dividend Aristocrat",
+			DividendYield: 3.5, PayoutRatio: 50, ConsecutiveDivYears: 25, DividendGrowthYears: 15,
+		},
+		// VALUE OPPORTUNITIES: peRatio < 20 && > 0, pbRatio < 5, debtToEquity < 1.5, freeCashFlow > 0
+		{
+			Symbol: "VALUE1", Name: "Value Stock",
+			PERatio: 12, PBRatio: 1.5, DebtToEquity: 0.8, FreeCashFlow: 1000000,
+		},
+		// HIGH BETA BULLS: beta > 1.5, return1M > 10, marketCap > 100000000
+		{
+			Symbol: "HIGHBETA1", Name: "High Beta Stock",
+			Beta: 2.0, Return1M: 15, MarketCap: 500000000,
+		},
+		// CASH IS KING: currentRatio > 2, quickRatio > 1.5, cashToDebt > 1, operatingCashFlow > 0
+		{
+			Symbol: "CASHKING1", Name: "Cash Rich Stock",
+			CurrentRatio: 3.0, QuickRatio: 2.5, CashToDebt: 2.0, OperatingCashFlow: 5000000,
+		},
+		// PIOTROSKI HIGH SCORE: piotroskiFScore >= 8
+		{
+			Symbol: "PIOTROSKI1", Name: "Piotroski Leader",
+			PiotroskiFScore: 9,
+		},
+		// SMALL CAP GROWTH: marketCap 300M-2B, revenueGrowth > 20, epsGrowth > 25, peRatio < 30 && > 0
+		{
+			Symbol: "SMALLCAP1", Name: "Small Cap Growth",
+			MarketCap: 800000000, RevenueGrowth: 35, EPSGrowth: 40, PERatio: 22,
+		},
+		// UNDERVALUED TECH: sector = "Technology", peRatio < 25 && > 0, pegRatio < 1, revenueGrowth > 15
+		{
+			Symbol: "UNDERTECH1", Name: "Undervalued Tech",
+			Sector: "Technology", PERatio: 18, PEGRatio: 0.7, RevenueGrowth: 25,
+		},
+		// GARP: epsGrowth > 15, revenueGrowth > 10, pegRatio 0.5-1.5, peRatio < 25 && > 0, roe > 12
+		{
+			Symbol: "GARP1", Name: "GARP Stock",
+			EPSGrowth: 20, RevenueGrowth: 18, PEGRatio: 1.0, PERatio: 20, ROE: 18,
+		},
+		// QUALITY STOCKS: roe > 15, roa > 8, grossMargin > 40, operatingMargin > 15, debtToEquity < 1, currentRatio > 1.5
+		{
+			Symbol: "QUALITY1", Name: "Quality Stock",
+			ROE: 22, ROA: 12, GrossMargin: 55, OperatingMargin: 25, DebtToEquity: 0.5, CurrentRatio: 2.2,
+		},
+		// LOW VOLATILITY: beta < 0.8 && > 0, dividendYield > 1, marketCap > 1000000000
+		{
+			Symbol: "LOWVOL1", Name: "Low Volatility Stock",
+			Beta: 0.5, DividendYield: 2.5, MarketCap: 50000000000,
+		},
+		// TURNAROUND CANDIDATES: return1Y < -20, return1M > 5, currentRatio > 1, revenueGrowth > 0
+		{
+			Symbol: "TURNAROUND1", Name: "Turnaround Stock",
+			Return1Y: -35, Return1M: 12, CurrentRatio: 1.5, RevenueGrowth: 8,
+		},
+	}
+}
+
+// TestAllScreenersWithGuaranteedMatches tests each screener with hardcoded data
+// that is guaranteed to match. This ensures deterministic, reliable tests.
+func TestAllScreenersWithGuaranteedMatches(t *testing.T) {
+	cache := createTestCache()
+	yahooService := NewYahooFinanceService(cache)
+	engine := NewScreenerEngine(yahooService, cache)
+
+	// Use hardcoded test data that guarantees matches
+	stocks := createTestStocksForAllScreeners()
+
+	testCases := []struct {
+		name           string
+		screener       models.Screener
+		expectedSymbol string
+	}{
+		{"Momentum Masters", models.MomentumMastersScreener(), "MOMENTUM1"},
+		{"Dividend Aristocrats", models.DividendAristocratsScreener(), "DIVIDEND1"},
+		{"Value Opportunities", models.ValueOpportunitiesScreener(), "VALUE1"},
+		{"High Beta Bulls", models.HighBetaBullsScreener(), "HIGHBETA1"},
+		{"Cash is King", models.CashIsKingScreener(), "CASHKING1"},
+		{"Piotroski High Score", models.PiotroskiHighScoreScreener(), "PIOTROSKI1"},
+		{"Small Cap Growth", models.SmallCapGrowthScreener(), "SMALLCAP1"},
+		{"Undervalued Tech", models.UndervaluedTechScreener(), "UNDERTECH1"},
+		{"GARP", models.GrowthAtReasonablePriceScreener(), "GARP1"},
+		{"Quality Stocks", models.QualityStocksScreener(), "QUALITY1"},
+		{"Low Volatility", models.LowVolatilityScreener(), "LOWVOL1"},
+		{"Turnaround Candidates", models.TurnaroundCandidatesScreener(), "TURNAROUND1"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name+" finds guaranteed match", func(t *testing.T) {
+			result := engine.ApplyFilters(stocks, tc.screener.Filters)
+
+			// Must find at least one result
+			assert.GreaterOrEqual(t, len(result), 1, "Screener %s should find at least 1 match", tc.name)
+
+			// The expected stock should be in results
+			found := false
+			for _, s := range result {
+				if s.Symbol == tc.expectedSymbol {
+					found = true
+					break
+				}
+			}
+			assert.True(t, found, "Screener %s should find stock %s", tc.name, tc.expectedSymbol)
+		})
+	}
+}
+
 // Test that country-based filtering works correctly
 func TestScreenersByCountry(t *testing.T) {
 	cache := createTestCache()
