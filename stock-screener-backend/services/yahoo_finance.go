@@ -17,10 +17,10 @@ import (
 
 // YahooFinanceService handles Yahoo Finance API interactions
 type YahooFinanceService struct {
-	client       *resty.Client
-	cache        *CacheService
-	baseURL      string
-	cacheTTL     time.Duration
+	client        *resty.Client
+	cache         *CacheService
+	baseURL       string
+	cacheTTL      time.Duration
 	maxConcurrent int
 }
 
@@ -33,10 +33,10 @@ func NewYahooFinanceService(cache *CacheService) *YahooFinanceService {
 	client.SetHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
 	return &YahooFinanceService{
-		client:       client,
-		cache:        cache,
-		baseURL:      "https://query1.finance.yahoo.com",
-		cacheTTL:     5 * time.Minute,
+		client:        client,
+		cache:         cache,
+		baseURL:       "https://query1.finance.yahoo.com",
+		cacheTTL:      5 * time.Minute,
 		maxConcurrent: 10,
 	}
 }
@@ -51,44 +51,44 @@ type YahooQuoteResponse struct {
 
 // YahooQuote represents a single quote from Yahoo Finance
 type YahooQuote struct {
-	Symbol                     string  `json:"symbol"`
-	ShortName                  string  `json:"shortName"`
-	LongName                   string  `json:"longName"`
-	Exchange                   string  `json:"exchange"`
-	Currency                   string  `json:"currency"`
-	RegularMarketPrice         float64 `json:"regularMarketPrice"`
-	RegularMarketChange        float64 `json:"regularMarketChange"`
-	RegularMarketChangePercent float64 `json:"regularMarketChangePercent"`
-	RegularMarketVolume        int64   `json:"regularMarketVolume"`
-	RegularMarketOpen          float64 `json:"regularMarketOpen"`
-	RegularMarketDayHigh       float64 `json:"regularMarketDayHigh"`
-	RegularMarketDayLow        float64 `json:"regularMarketDayLow"`
-	RegularMarketPreviousClose float64 `json:"regularMarketPreviousClose"`
-	MarketCap                  int64   `json:"marketCap"`
-	SharesOutstanding          int64   `json:"sharesOutstanding"`
-	FiftyTwoWeekHigh           float64 `json:"fiftyTwoWeekHigh"`
-	FiftyTwoWeekLow            float64 `json:"fiftyTwoWeekLow"`
-	FiftyDayAverage            float64 `json:"fiftyDayAverage"`
-	TwoHundredDayAverage       float64 `json:"twoHundredDayAverage"`
-	AverageDailyVolume3Month   int64   `json:"averageDailyVolume3Month"`
-	AverageDailyVolume10Day    int64   `json:"averageDailyVolume10Day"`
-	TrailingPE                 float64 `json:"trailingPE"`
-	ForwardPE                  float64 `json:"forwardPE"`
-	PriceToBook                float64 `json:"priceToBook"`
-	TrailingAnnualDividendYield float64 `json:"trailingAnnualDividendYield"`
-	TrailingAnnualDividendRate float64 `json:"trailingAnnualDividendRate"`
-	DividendYield              float64 `json:"dividendYield"`
-	PayoutRatio                float64 `json:"payoutRatio"`
-	Beta                       float64 `json:"beta"`
-	EpsTrailingTwelveMonths    float64 `json:"epsTrailingTwelveMonths"`
-	EpsForward                 float64 `json:"epsForward"`
-	BookValue                  float64 `json:"bookValue"`
+	Symbol                       string  `json:"symbol"`
+	ShortName                    string  `json:"shortName"`
+	LongName                     string  `json:"longName"`
+	Exchange                     string  `json:"exchange"`
+	Currency                     string  `json:"currency"`
+	RegularMarketPrice           float64 `json:"regularMarketPrice"`
+	RegularMarketChange          float64 `json:"regularMarketChange"`
+	RegularMarketChangePercent   float64 `json:"regularMarketChangePercent"`
+	RegularMarketVolume          int64   `json:"regularMarketVolume"`
+	RegularMarketOpen            float64 `json:"regularMarketOpen"`
+	RegularMarketDayHigh         float64 `json:"regularMarketDayHigh"`
+	RegularMarketDayLow          float64 `json:"regularMarketDayLow"`
+	RegularMarketPreviousClose   float64 `json:"regularMarketPreviousClose"`
+	MarketCap                    int64   `json:"marketCap"`
+	SharesOutstanding            int64   `json:"sharesOutstanding"`
+	FiftyTwoWeekHigh             float64 `json:"fiftyTwoWeekHigh"`
+	FiftyTwoWeekLow              float64 `json:"fiftyTwoWeekLow"`
+	FiftyDayAverage              float64 `json:"fiftyDayAverage"`
+	TwoHundredDayAverage         float64 `json:"twoHundredDayAverage"`
+	AverageDailyVolume3Month     int64   `json:"averageDailyVolume3Month"`
+	AverageDailyVolume10Day      int64   `json:"averageDailyVolume10Day"`
+	TrailingPE                   float64 `json:"trailingPE"`
+	ForwardPE                    float64 `json:"forwardPE"`
+	PriceToBook                  float64 `json:"priceToBook"`
+	TrailingAnnualDividendYield  float64 `json:"trailingAnnualDividendYield"`
+	TrailingAnnualDividendRate   float64 `json:"trailingAnnualDividendRate"`
+	DividendYield                float64 `json:"dividendYield"`
+	PayoutRatio                  float64 `json:"payoutRatio"`
+	Beta                         float64 `json:"beta"`
+	EpsTrailingTwelveMonths      float64 `json:"epsTrailingTwelveMonths"`
+	EpsForward                   float64 `json:"epsForward"`
+	BookValue                    float64 `json:"bookValue"`
 	PriceToSalesTrailing12Months float64 `json:"priceToSalesTrailing12Months"`
-	EnterpriseToRevenue        float64 `json:"enterpriseToRevenue"`
-	EnterpriseToEbitda         float64 `json:"enterpriseToEbitda"`
-	QuoteType                  string  `json:"quoteType"`
-	Sector                     string  `json:"sector,omitempty"`
-	Industry                   string  `json:"industry,omitempty"`
+	EnterpriseToRevenue          float64 `json:"enterpriseToRevenue"`
+	EnterpriseToEbitda           float64 `json:"enterpriseToEbitda"`
+	QuoteType                    string  `json:"quoteType"`
+	Sector                       string  `json:"sector,omitempty"`
+	Industry                     string  `json:"industry,omitempty"`
 }
 
 // GetQuotes fetches quotes for multiple symbols
@@ -619,32 +619,7 @@ func getStringValue(data map[string]interface{}, key string) string {
 
 // GetDefaultStockSymbols returns a list of common stock symbols
 func GetDefaultStockSymbols() []string {
-	return []string{
-		// Tech Giants
-		"AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA", "AMD", "INTC", "CRM",
-		"ORCL", "ADBE", "CSCO", "IBM", "QCOM", "TXN", "AVGO", "NOW", "SNOW", "PLTR",
-		// Finance
-		"JPM", "BAC", "WFC", "GS", "MS", "C", "BLK", "SCHW", "AXP", "V",
-		"MA", "PYPL", "SQ", "COIN", "HOOD",
-		// Healthcare
-		"JNJ", "UNH", "PFE", "ABBV", "MRK", "LLY", "TMO", "ABT", "BMY", "AMGN",
-		"GILD", "REGN", "VRTX", "MRNA", "BIIB",
-		// Consumer
-		"WMT", "HD", "COST", "NKE", "MCD", "SBUX", "TGT", "LOW", "TJX", "LULU",
-		"DIS", "NFLX", "CMCSA", "PEP", "KO",
-		// Industrial
-		"CAT", "DE", "BA", "HON", "UPS", "FDX", "GE", "MMM", "LMT", "RTX",
-		// Energy
-		"XOM", "CVX", "COP", "SLB", "EOG", "MPC", "VLO", "PSX", "OXY", "DVN",
-		// Real Estate
-		"AMT", "PLD", "CCI", "EQIX", "SPG", "O", "WELL", "DLR", "AVB", "EQR",
-		// Utilities
-		"NEE", "DUK", "SO", "D", "AEP", "EXC", "SRE", "XEL", "PEG", "ED",
-		// Telecom
-		"T", "VZ", "TMUS", "CHTR",
-		// Materials
-		"LIN", "APD", "SHW", "ECL", "FCX", "NEM", "NUE",
-	}
+	return buildDefaultStockUniverse()
 }
 
 // CalculatePiotroskiScore calculates F-Score for a stock based on available data

@@ -8,19 +8,19 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	ServerPort       string
-	CacheTTL         time.Duration
-	GinMode          string
-	RateLimitPerMin  int
-	DemoMode         bool
-	YahooFinanceURL  string
-	FMPBaseURL       string
-	FMPAPIKey        string
-	AlphaVantageURL  string
-	AlphaVantageKey  string
-	AllowedOrigins   []string
-	RequestTimeout   time.Duration
-	MaxConcurrent    int
+	ServerPort      string
+	CacheTTL        time.Duration
+	GinMode         string
+	RateLimitPerMin int
+	DemoMode        bool
+	YahooFinanceURL string
+	FMPBaseURL      string
+	FMPAPIKey       string
+	AlphaVantageURL string
+	AlphaVantageKey string
+	AllowedOrigins  []string
+	RequestTimeout  time.Duration
+	MaxConcurrent   int
 }
 
 // DefaultConfig returns the default configuration
@@ -32,8 +32,8 @@ func DefaultConfig() *Config {
 		origins[i] = strings.TrimSpace(origins[i])
 	}
 
-	// Demo mode: default true unless explicitly set to "false"
-	demoMode := getEnv("DEMO_MODE", "true") != "false"
+	// Demo mode: default false; set DEMO_MODE=true to force mock data
+	demoMode := strings.EqualFold(strings.TrimSpace(getEnv("DEMO_MODE", "false")), "true")
 
 	cacheTTL := parseDurationEnv("CACHE_TTL", 5*time.Minute)
 	ginMode := strings.ToLower(strings.TrimSpace(getEnv("GIN_MODE", "release")))
@@ -42,19 +42,19 @@ func DefaultConfig() *Config {
 	}
 
 	return &Config{
-		ServerPort:       getEnv("PORT", "8080"),
-		CacheTTL:         cacheTTL,
-		GinMode:          ginMode,
-		RateLimitPerMin:  60,
-		DemoMode:         demoMode,
-		YahooFinanceURL:  "https://query1.finance.yahoo.com",
-		FMPBaseURL:       "https://financialmodelingprep.com/api/v3",
-		FMPAPIKey:        getEnv("FMP_API_KEY", ""),
-		AlphaVantageURL:  "https://www.alphavantage.co/query",
-		AlphaVantageKey:  getEnv("ALPHA_VANTAGE_KEY", ""),
-		AllowedOrigins:   origins,
-		RequestTimeout:   30 * time.Second,
-		MaxConcurrent:    10,
+		ServerPort:      getEnv("PORT", "8080"),
+		CacheTTL:        cacheTTL,
+		GinMode:         ginMode,
+		RateLimitPerMin: 60,
+		DemoMode:        demoMode,
+		YahooFinanceURL: "https://query1.finance.yahoo.com",
+		FMPBaseURL:      "https://financialmodelingprep.com/api/v3",
+		FMPAPIKey:       getEnv("FMP_API_KEY", ""),
+		AlphaVantageURL: "https://www.alphavantage.co/query",
+		AlphaVantageKey: getEnv("ALPHA_VANTAGE_KEY", ""),
+		AllowedOrigins:  origins,
+		RequestTimeout:  30 * time.Second,
+		MaxConcurrent:   10,
 	}
 }
 

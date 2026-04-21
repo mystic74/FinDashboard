@@ -34,8 +34,8 @@ help:
 	@echo ""
 	@echo "Environment:"
 	@echo "  Configure via .env file (see .env.example)"
-	@echo "  DEMO_MODE=true (default) uses mock data"
-	@echo "  DEMO_MODE=false uses live Yahoo Finance API"
+	@echo "  DEMO_MODE=false (default) uses live Yahoo Finance API"
+	@echo "  DEMO_MODE=true uses mock data"
 
 # =============================================================================
 # Setup

@@ -224,7 +224,7 @@ cp .env.example .env
 |----------|---------|-------------|
 | `PORT` | `8080` | Server port |
 | `GIN_MODE` | `release` | Gin mode (`debug` or `release`) |
-| `DEMO_MODE` | `true` | Use mock data (`true`) or live Yahoo Finance (`false`) |
+| `DEMO_MODE` | `false` | Use mock data (`true`) or live Yahoo Finance (`false`) |
 | `CORS_ORIGIN` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins (comma-separated) |
 | `CACHE_TTL` | `5m` | In-memory cache TTL (Go duration string) |
 
@@ -237,7 +237,9 @@ cp .env.example .env
 
 ### Demo Mode
 
-By default, the application runs in **Demo Mode** with mock stock data. This is useful for:
+By default, the application runs in **Live Mode** with Yahoo Finance data.
+
+Use **Demo Mode** (`DEMO_MODE=true`) with mock stock data when needed. This is useful for:
 - Development without API rate limits
 - Testing UI without network dependencies
 - Running in environments where Yahoo Finance is blocked
