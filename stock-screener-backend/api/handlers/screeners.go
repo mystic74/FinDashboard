@@ -1,0 +1,215 @@
+package handlers
+
+import (
+	"net/http"
+	"stock-screener/models"
+	"stock-screener/services"
+
+	"github.com/gin-gonic/gin"
+)
+
+// ScreenerHandler handles screener-related requests
+type ScreenerHandler struct {
+	engine   *services.ScreenerEngine
+	profiles *ProfileHandler
+}
+
+// NewScreenerHandler creates a new screener handler
+func NewScreenerHandler(engine *services.ScreenerEngine, profiles *ProfileHandler) *ScreenerHandler {
+	if profiles == nil {
+		profiles = NewProfileHandler()
+	}
+	return &ScreenerHandler{engine: engine, profiles: profiles}
+}
+
+// GetAllScreeners returns all predefined screeners
+// @Summary Get all predefined screeners
+// @Description Returns a list of all available predefined screeners
+// @Tags Screeners
+// @Produce json
+// @Success 200 {array} models.Screener
+// @Router /api/v1/screeners [get]
+func (h *ScreenerHandler) GetAllScreeners(c *gin.Context) {
+	screeners := h.engine.GetAllPredefinedScreeners()
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"screeners": screeners,
+		"count":     len(screeners),
+	})
+}
+
+// GetScreenersSummary returns summaries of all predefined screeners
+// @Summary Get screener summaries
+// @Description Returns summaries of all predefined screeners with match counts
+// @Tags Screeners
+// @Produce json
+// @Success 200 {array} models.ScreenerSummary
+// @Router /api/v1/screeners/summary [get]
+func (h *ScreenerHandler) GetScreenersSummary(c *gin.Context) {
+	summaries, err := h.engine.GetScreenersSummary(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":   true,
+		"summaries": summaries,
+	})
+}
+
+// RunScreener runs a specific predefined screener
+// @Summary Run a predefined screener
+// @Description Runs a predefined screener and returns matching stocks
+// @Tags Screeners
+// @Produce json
+// @Param name path string true "Screener ID"
+// @Param country query string false "Filter by country (e.g., USA, Israel, UK)"
+// @Param sector query string false "Filter by sector (e.g., Technology, Healthcare)"
+// @Param adjust query bool false "Adjust screener thresholds for market (default: true)"
+// @Success 200 {object} models.ScreenerResult
+// @Failure 404 {object} map[string]interface{}
+// @Router /api/v1/screeners/{name} [get]
+func (h *ScreenerHandler) RunScreener(c *gin.Context) {
+	screenerID := c.Param("name")
+	country := c.Query("country")
+	sector := c.Query("sector")
+	adjustParam := c.DefaultQuery("adjust", "true")
+	shouldAdjust := adjustParam == "true"
+
+	screener, found := h.engine.GetScreenerByID(screenerID)
+	if !found {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"error":   "Screener not found",
+		})
+		return
+	}
+
+	// Create a copy of the screener to add additional filters
+	screenerCopy := *screener
+
+	profile, hasProfile := h.getProfileForCountry(country)
+	adjusted := shouldAdjust && hasProfile && country != "" && country != "USA"
+
+	// Adjust screener thresholds for the target market (uses API profile overrides when present)
+	if adjusted {
+		screenerCopy = models.AdjustScreenerForProfile(screenerCopy, profile)
+	}
+
+	// Add country filter if specified
+	if country != "" {
+		screenerCopy.Filters = append(screenerCopy.Filters, models.Filter{
+			Field:    "country",
+			Operator: models.OpEquals,
+			Value:    country,
+		})
+	}
+
+	// Add sector filter if specified
+	if sector != "" {
+		screenerCopy.Filters = append(screenerCopy.Filters, models.Filter{
+			Field:    "sector",
+			Operator: models.OpEquals,
+			Value:    sector,
+		})
+	}
+
+	result, err := h.engine.RunScreener(c.Request.Context(), screenerCopy)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	// Include market profile info in response (default + custom overrides from profile API)
+	var marketProfile *models.MarketProfile
+	if hasProfile && profile != nil {
+		cp := *profile
+		marketProfile = &cp
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":       true,
+		"result":        result,
+		"marketProfile": marketProfile,
+		"adjusted":      adjusted,
+	})
+}
+
+func (h *ScreenerHandler) getProfileForCountry(country string) (*models.MarketProfile, bool) {
+	if country == "" {
+		return nil, false
+	}
+
+	if h.profiles != nil {
+		return h.profiles.GetProfileForCountry(country)
+	}
+
+	profile, ok := models.MarketProfiles[country]
+	return profile, ok
+}
+
+// RunCustomScreener runs a custom screener with user-defined filters
+// @Summary Run a custom screener
+// @Description Runs a custom screener with user-defined filters
+// @Tags Screeners
+// @Accept json
+// @Produce json
+// @Param request body models.FilterRequest true "Filter request"
+// @Success 200 {object} models.FilterResponse
+// @Failure 400 {object} map[string]interface{}
+// @Router /api/v1/screeners/custom [post]
+func (h *ScreenerHandler) RunCustomScreener(c *gin.Context) {
+	var request models.FilterRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body: " + err.Error(),
+		})
+		return
+	}
+
+	result, err := h.engine.RunCustomScreener(c.Request.Context(), request)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"result":  result,
+	})
+}
+
+// GetSectorPerformance returns sector performance data
+// @Summary Get sector performance
+// @Description Returns performance data grouped by sector
+// @Tags Screeners
+// @Produce json
+// @Success 200 {array} models.SectorPerformance
+// @Router /api/v1/sectors [get]
+func (h *ScreenerHandler) GetSectorPerformance(c *gin.Context) {
+	performance, err := h.engine.GetSectorPerformance(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success":  true,
+		"sectors":  performance,
+		"count":    len(performance),
+	})
+}

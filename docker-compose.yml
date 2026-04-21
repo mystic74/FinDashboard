@@ -1,0 +1,35 @@
+version: '3.8'
+
+# Environment variables can be set in .env file (copy from .env.example)
+
+services:
+  backend:
+    build:
+      context: ./stock-screener-backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    environment:
+      - GIN_MODE=${GIN_MODE:-release}
+      - PORT=8080
+      - DEMO_MODE=${DEMO_MODE:-true}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
+      - CACHE_TTL=${CACHE_TTL:-5m}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./stock-screener-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Development configuration (use with: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up)

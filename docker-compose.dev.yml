@@ -1,0 +1,29 @@
+version: '3.8'
+
+# Development overrides - use with:
+# docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    build:
+      context: ./stock-screener-backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./stock-screener-backend:/app
+    environment:
+      - GIN_MODE=debug
+      - PORT=8080
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+
+  frontend:
+    build:
+      context: ./stock-screener-frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./stock-screener-frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      # Browser uses Vite dev server; /api is proxied to the backend container.
+      - VITE_DEV_PROXY_TARGET=http://backend:8080

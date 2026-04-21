@@ -1,0 +1,20 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Test artifacts
+coverage.out
+coverage.html
+
+# Build artifacts
+tmp/
+main
+
+# Documentation
+*.md
