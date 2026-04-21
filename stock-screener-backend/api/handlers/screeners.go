@@ -10,12 +10,16 @@ import (
 
 // ScreenerHandler handles screener-related requests
 type ScreenerHandler struct {
-	engine *services.ScreenerEngine
+	engine   *services.ScreenerEngine
+	profiles *ProfileHandler
 }
 
 // NewScreenerHandler creates a new screener handler
-func NewScreenerHandler(engine *services.ScreenerEngine) *ScreenerHandler {
-	return &ScreenerHandler{engine: engine}
+func NewScreenerHandler(engine *services.ScreenerEngine, profiles *ProfileHandler) *ScreenerHandler {
+	if profiles == nil {
+		profiles = NewProfileHandler()
+	}
+	return &ScreenerHandler{engine: engine, profiles: profiles}
 }
 
 // GetAllScreeners returns all predefined screeners
@@ -88,9 +92,12 @@ func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 	// Create a copy of the screener to add additional filters
 	screenerCopy := *screener
 
-	// Adjust screener thresholds for the target market
-	if shouldAdjust && country != "" && country != "USA" {
-		screenerCopy = models.AdjustScreenerForMarket(screenerCopy, country)
+	profile, hasProfile := h.getProfileForCountry(country)
+	adjusted := shouldAdjust && hasProfile && country != "" && country != "USA"
+
+	// Adjust screener thresholds for the target market (uses API profile overrides when present)
+	if adjusted {
+		screenerCopy = models.AdjustScreenerForProfile(screenerCopy, profile)
 	}
 
 	// Add country filter if specified
@@ -120,18 +127,32 @@ func (h *ScreenerHandler) RunScreener(c *gin.Context) {
 		return
 	}
 
-	// Include market profile info in response
+	// Include market profile info in response (default + custom overrides from profile API)
 	var marketProfile *models.MarketProfile
-	if country != "" {
-		marketProfile = models.GetMarketProfile(country)
+	if hasProfile && profile != nil {
+		cp := *profile
+		marketProfile = &cp
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success":       true,
 		"result":        result,
 		"marketProfile": marketProfile,
-		"adjusted":      shouldAdjust && country != "" && country != "USA",
+		"adjusted":      adjusted,
 	})
+}
+
+func (h *ScreenerHandler) getProfileForCountry(country string) (*models.MarketProfile, bool) {
+	if country == "" {
+		return nil, false
+	}
+
+	if h.profiles != nil {
+		return h.profiles.GetProfileForCountry(country)
+	}
+
+	profile, ok := models.MarketProfiles[country]
+	return profile, ok
 }
 
 // RunCustomScreener runs a custom screener with user-defined filters

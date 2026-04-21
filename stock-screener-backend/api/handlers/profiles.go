@@ -151,13 +151,8 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 	customProfile, exists := h.customProfiles[country]
 	if !exists {
 		// Clone base profile
-		customProfile = &models.MarketProfile{
-			Country:             baseProfile.Country,
-			MarketCapMultiplier: baseProfile.MarketCapMultiplier,
-			VolumeMultiplier:    baseProfile.VolumeMultiplier,
-			DividendMultiplier:  baseProfile.DividendMultiplier,
-			GrowthMultiplier:    baseProfile.GrowthMultiplier,
-		}
+		cp := *baseProfile
+		customProfile = &cp
 	}
 
 	// Apply updates
@@ -244,4 +239,22 @@ func (h *ProfileHandler) GetCustomProfile(country string) *models.MarketProfile 
 		return custom
 	}
 	return models.GetMarketProfile(country)
+}
+
+// GetProfileForCountry returns a custom/default profile only when the country exists.
+// Unlike GetCustomProfile, this does not fallback unknown countries to USA.
+func (h *ProfileHandler) GetProfileForCountry(country string) (*models.MarketProfile, bool) {
+	if country == "" {
+		return nil, false
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	if custom, ok := h.customProfiles[country]; ok {
+		return custom, true
+	}
+
+	defaultProfile, ok := models.MarketProfiles[country]
+	return defaultProfile, ok
 }

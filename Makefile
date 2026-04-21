@@ -27,7 +27,7 @@ help:
 	@echo "Testing:"
 	@echo "  make test         - Run all tests"
 	@echo "  make test-verbose - Run tests with verbose output"
-	@echo "  make test-coverage- Generate test coverage report"
+	@echo "  make test-coverage - Generate test coverage report"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean        - Clean build artifacts and containers"
@@ -60,7 +60,7 @@ setup:
 dev:
 	@echo "Starting development servers..."
 	@echo "Backend: http://localhost:8080"
-	@echo "Frontend: http://localhost:5173"
+	@echo "Frontend: http://localhost:3000"
 	@make -j2 backend frontend
 
 backend:

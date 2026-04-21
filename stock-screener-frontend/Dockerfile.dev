@@ -12,7 +12,7 @@ RUN npm install
 # Copy source (will be overridden by volume mount)
 COPY . .
 
-EXPOSE 5173
+EXPOSE 3000
 
-# Run dev server with host binding for Docker
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Run dev server with host binding for Docker (port from vite.config.ts)
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]

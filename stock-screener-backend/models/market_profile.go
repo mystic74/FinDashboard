@@ -293,6 +293,20 @@ func AdjustFilterForMarket(filter Filter, profile *MarketProfile) Filter {
 	return adjusted
 }
 
+// AdjustScreenerForProfile returns a copy of the screener with filters adjusted using the given profile.
+func AdjustScreenerForProfile(screener Screener, profile *MarketProfile) Screener {
+	if profile == nil {
+		return screener
+	}
+
+	adjusted := screener
+	adjusted.Filters = make([]Filter, len(screener.Filters))
+	for i, filter := range screener.Filters {
+		adjusted.Filters[i] = AdjustFilterForMarket(filter, profile)
+	}
+	return adjusted
+}
+
 // AdjustScreenerForMarket returns a copy of the screener with filters adjusted for the market
 func AdjustScreenerForMarket(screener Screener, country string) Screener {
 	if country == "" || country == "USA" {
@@ -300,16 +314,5 @@ func AdjustScreenerForMarket(screener Screener, country string) Screener {
 	}
 
 	profile := GetMarketProfile(country)
-	if profile == nil {
-		return screener
-	}
-
-	adjusted := screener
-	adjusted.Filters = make([]Filter, len(screener.Filters))
-
-	for i, filter := range screener.Filters {
-		adjusted.Filters[i] = AdjustFilterForMarket(filter, profile)
-	}
-
-	return adjusted
+	return AdjustScreenerForProfile(screener, profile)
 }

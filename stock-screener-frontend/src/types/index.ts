@@ -62,6 +62,17 @@ export interface Stock {
   lastUpdated: string;
 }
 
+/** Matches GET /stocks/:symbol/quote `quote` payload */
+export interface StockQuote {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: number;
+  marketCap: number;
+}
+
 export interface Screener {
   id: string;
   name: string;

@@ -138,8 +138,8 @@ make prod
 
 | Mode | Frontend | Backend API |
 |------|----------|-------------|
-| Local Dev | http://localhost:5173 | http://localhost:8080 |
-| Docker Dev | http://localhost:5173 | http://localhost:8080 |
+| Local Dev | http://localhost:3000 | http://localhost:8080 |
+| Docker Dev | http://localhost:3000 | http://localhost:8080 (via Vite `/api` proxy) |
 | Docker Prod | http://localhost:3000 | http://localhost:8080 |
 
 ### Backend
@@ -166,6 +166,7 @@ The frontend will be available at `http://localhost:3000`
 
 ### Screeners
 - `GET /api/v1/screeners` - Get all predefined screeners
+- `GET /api/v1/screeners/summary` - Summaries with match counts
 - `GET /api/v1/screeners/:name` - Run a specific screener
 - `POST /api/v1/screeners/custom` - Run custom screener with filters
 
@@ -182,6 +183,13 @@ The frontend will be available at `http://localhost:3000`
 ### Sectors
 - `GET /api/v1/sectors` - Get sector performance
 - `GET /api/v1/sectors/list` - Get sector list
+
+### Market profiles
+- `GET /api/v1/profiles` - List profiles (defaults + in-memory overrides)
+- `GET /api/v1/profiles/:country` - Get one profile
+- `PUT /api/v1/profiles/:country` - Update multipliers (non-USA; affects screener adjustment)
+- `POST /api/v1/profiles/:country/reset` - Reset one country
+- `POST /api/v1/profiles/reset` - Reset all overrides
 
 ## Running Tests
 
@@ -200,9 +208,7 @@ Test coverage includes:
 
 ## Data Sources
 
-- Yahoo Finance API (primary)
-- Financial Modeling Prep (alternative)
-- Alpha Vantage (alternative)
+With **`DEMO_MODE=false`**, the HTTP API uses **Yahoo Finance** for screener and stock data. Additional provider code (FMP, Alpha Vantage) exists under `services/` but is **not** wired into the live routes yet.
 
 ## Environment Variables
 
@@ -219,14 +225,15 @@ cp .env.example .env
 | `PORT` | `8080` | Server port |
 | `GIN_MODE` | `release` | Gin mode (`debug` or `release`) |
 | `DEMO_MODE` | `true` | Use mock data (`true`) or live Yahoo Finance (`false`) |
-| `CORS_ORIGIN` | `http://localhost:3000` | Allowed CORS origins |
-| `CACHE_TTL` | `5m` | Cache time-to-live |
+| `CORS_ORIGIN` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins (comma-separated) |
+| `CACHE_TTL` | `5m` | In-memory cache TTL (Go duration string) |
 
 ### Frontend Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VITE_API_URL` | `http://localhost:8080` | Backend API URL |
+| `VITE_API_URL` | _(unset)_ | Optional full backend origin for direct browser calls (`.../api/v1` is appended). Default: relative `/api/v1` + Vite proxy (dev) or nginx (prod). |
+| `VITE_DEV_PROXY_TARGET` | _(see compose)_ | Docker dev: Vite proxy target for `/api` (e.g. `http://backend:8080`). |
 
 ### Demo Mode
 

@@ -3,7 +3,6 @@ package routes
 import (
 	"log"
 	"net/http"
-	"os"
 	"stock-screener/api/handlers"
 	"stock-screener/config"
 	"stock-screener/services"
@@ -15,8 +14,11 @@ import (
 
 // SetupRouter configures and returns the Gin router
 func SetupRouter(cfg *config.Config) *gin.Engine {
-	// Set Gin mode based on environment
-	gin.SetMode(gin.ReleaseMode)
+	if cfg.GinMode == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	router := gin.New()
 
@@ -35,10 +37,13 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	}))
 
 	// Initialize services
-	cacheService := services.NewCacheService(cfg.CacheTTL, 10*time.Minute)
+	cacheCleanup := cfg.CacheTTL * 2
+	if cacheCleanup < time.Minute {
+		cacheCleanup = 10 * time.Minute
+	}
+	cacheService := services.NewCacheService(cfg.CacheTTL, cacheCleanup)
 
-	// Check for demo mode (default: true for easier testing)
-	demoMode := os.Getenv("DEMO_MODE") != "false"
+	demoMode := cfg.DemoMode
 
 	var screenerEngine *services.ScreenerEngine
 	if demoMode {
@@ -54,10 +59,10 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	yahooService := services.NewYahooFinanceService(cacheService)
 
 	// Initialize handlers
-	screenerHandler := handlers.NewScreenerHandler(screenerEngine)
+	profileHandler := handlers.NewProfileHandler()
+	screenerHandler := handlers.NewScreenerHandler(screenerEngine, profileHandler)
 	stockHandler := handlers.NewStockHandler(yahooService)
 	filterHandler := handlers.NewFilterHandler()
-	profileHandler := handlers.NewProfileHandler()
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {

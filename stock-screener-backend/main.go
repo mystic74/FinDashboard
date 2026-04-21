@@ -19,7 +19,8 @@ func main() {
 
 	// Start server
 	serverAddr := fmt.Sprintf(":%s", cfg.ServerPort)
-	log.Printf("Starting Stock Screener API server on %s", serverAddr)
+	log.Printf("Starting Stock Screener API server on %s (gin=%s demo=%v cacheTTL=%s)",
+		serverAddr, cfg.GinMode, cfg.DemoMode, cfg.CacheTTL)
 	log.Printf("API available at http://localhost%s/api/v1", serverAddr)
 
 	// Graceful shutdown

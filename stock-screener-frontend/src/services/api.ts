@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import type {
   Stock,
+  StockQuote,
   Screener,
   ScreenerResult,
   FilterRequest,
@@ -10,7 +11,10 @@ import type {
   ScreenerSummary,
 } from '../types';
 
-const API_BASE_URL = '/api/v1';
+const viteApiRoot = import.meta.env.VITE_API_URL as string | undefined;
+const API_BASE_URL = viteApiRoot
+  ? `${viteApiRoot.replace(/\/$/, '')}/api/v1`
+  : '/api/v1';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -75,7 +79,7 @@ export const stockApi = {
     return data.stocks;
   },
 
-  getQuote: async (symbol: string): Promise<Stock> => {
+  getQuote: async (symbol: string): Promise<StockQuote> => {
     const { data } = await api.get(`/stocks/${symbol}/quote`);
     return data.quote;
   },

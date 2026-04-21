@@ -10,6 +10,7 @@ import (
 type Config struct {
 	ServerPort       string
 	CacheTTL         time.Duration
+	GinMode          string
 	RateLimitPerMin  int
 	DemoMode         bool
 	YahooFinanceURL  string
@@ -34,9 +35,16 @@ func DefaultConfig() *Config {
 	// Demo mode: default true unless explicitly set to "false"
 	demoMode := getEnv("DEMO_MODE", "true") != "false"
 
+	cacheTTL := parseDurationEnv("CACHE_TTL", 5*time.Minute)
+	ginMode := strings.ToLower(strings.TrimSpace(getEnv("GIN_MODE", "release")))
+	if ginMode == "" {
+		ginMode = "release"
+	}
+
 	return &Config{
 		ServerPort:       getEnv("PORT", "8080"),
-		CacheTTL:         5 * time.Minute,
+		CacheTTL:         cacheTTL,
+		GinMode:          ginMode,
 		RateLimitPerMin:  60,
 		DemoMode:         demoMode,
 		YahooFinanceURL:  "https://query1.finance.yahoo.com",
@@ -61,4 +69,16 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func parseDurationEnv(key string, defaultVal time.Duration) time.Duration {
+	s := strings.TrimSpace(os.Getenv(key))
+	if s == "" {
+		return defaultVal
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		return defaultVal
+	}
+	return d
 }

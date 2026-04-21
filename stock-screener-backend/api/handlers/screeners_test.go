@@ -18,7 +18,8 @@ func setupTestRouter() (*gin.Engine, *ScreenerHandler) {
 
 	cache := services.NewCacheService(5*time.Minute, 10*time.Minute)
 	engine := services.NewScreenerEngineWithDemo(cache)
-	handler := NewScreenerHandler(engine)
+	profiles := NewProfileHandler()
+	handler := NewScreenerHandler(engine, profiles)
 
 	return router, handler
 }
@@ -256,6 +257,21 @@ func TestScreenerMarketAdjustments(t *testing.T) {
 		assert.False(t, response["adjusted"].(bool), "Should not be adjusted when adjust=false")
 	})
 
+	t.Run("Unknown country is not adjusted and has no profile payload", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/screeners/small-cap-growth?country=Atlantis", nil)
+		w := httptest.NewRecorder()
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+
+		assert.False(t, response["adjusted"].(bool), "Unknown countries should not be adjusted")
+		assert.Nil(t, response["marketProfile"], "Unknown countries should not return a market profile")
+	})
+
 	t.Run("All supported markets have correct profiles", func(t *testing.T) {
 		countries := []string{"Israel", "UK", "Germany", "Japan", "China", "India", "Brazil", "Canada", "Switzerland", "France", "Australia"}
 
@@ -277,4 +293,24 @@ func TestScreenerMarketAdjustments(t *testing.T) {
 			t.Logf("%s: marketCapMultiplier=%.2f", country, profile["marketCapMultiplier"].(float64))
 		}
 	})
+}
+
+func TestNewScreenerHandler_WithNilProfiles_DoesNotPanic(t *testing.T) {
+	cache := services.NewCacheService(5*time.Minute, 10*time.Minute)
+	engine := services.NewScreenerEngineWithDemo(cache)
+	handler := NewScreenerHandler(engine, nil)
+
+	router := gin.New()
+	router.GET("/screeners/:name", handler.RunScreener)
+
+	req := httptest.NewRequest(http.MethodGet, "/screeners/piotroski-high-score?country=Israel", nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+	assert.True(t, response["success"].(bool))
 }
