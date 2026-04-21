@@ -43,11 +43,11 @@ func DefaultConfig() *Config {
 		ginMode = "release"
 	}
 
-	yahooDriver := strings.ToLower(strings.TrimSpace(getEnv("YAHOO_QUOTE_DRIVER", "ffeng")))
+	yahooDriver := strings.ToLower(strings.TrimSpace(getEnv("YAHOO_QUOTE_DRIVER", "resty")))
 	switch yahooDriver {
 	case "resty", "ffeng", "ampyfin":
 	default:
-		yahooDriver = "ffeng"
+		yahooDriver = "resty"
 	}
 
 	return &Config{

@@ -141,15 +141,15 @@ func (y *YahooFinanceService) getQuotesAmpyFin(ctx context.Context, symbols []st
 		g.Go(func() error {
 			nq, err := client.FetchQuote(ctx, sym, "stock-screener")
 			if err != nil {
-				return nil
+				return fmt.Errorf("ampyfin fetch %s: %w", sym, err)
 			}
 			raw, err := json.Marshal(nq)
 			if err != nil {
-				return nil
+				return fmt.Errorf("ampyfin marshal %s: %w", sym, err)
 			}
 			var wire ampyQuoteJSON
 			if err := json.Unmarshal(raw, &wire); err != nil {
-				return nil
+				return fmt.Errorf("ampyfin unmarshal %s: %w", sym, err)
 			}
 			st := models.Stock{
 				Symbol:      wire.Security.Symbol,
@@ -169,8 +169,14 @@ func (y *YahooFinanceService) getQuotesAmpyFin(ctx context.Context, symbols []st
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("ampyfin: no quotes returned")
+	expected := 0
+	for _, sym := range symbols {
+		if strings.TrimSpace(sym) != "" {
+			expected++
+		}
+	}
+	if len(out) != expected {
+		return nil, fmt.Errorf("ampyfin: returned %d/%d quotes", len(out), expected)
 	}
 	return out, nil
 }

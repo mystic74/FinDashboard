@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"stock-screener/models"
 	"stock-screener/services"
@@ -52,7 +53,12 @@ func (h *StockHandler) GetStock(c *gin.Context) {
 
 	stocks, err := h.getQuotes(c, []string{symbol})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		status := http.StatusInternalServerError
+		if errors.Is(err, services.ErrInvalidQuotePayload) {
+			status = http.StatusBadGateway
+			err = errors.New("invalid quote payload: " + err.Error())
+		}
+		c.JSON(status, gin.H{
 			"success": false,
 			"error":   err.Error(),
 		})
@@ -162,7 +168,12 @@ func (h *StockHandler) GetMultipleStocks(c *gin.Context) {
 
 	stocks, err := h.getQuotes(c, validSymbols)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		status := http.StatusInternalServerError
+		if errors.Is(err, services.ErrInvalidQuotePayload) {
+			status = http.StatusBadGateway
+			err = errors.New("invalid quote payload: " + err.Error())
+		}
+		c.JSON(status, gin.H{
 			"success": false,
 			"error":   err.Error(),
 		})
@@ -261,7 +272,12 @@ func (h *StockHandler) GetStockQuote(c *gin.Context) {
 
 	stocks, err := h.getQuotes(c, []string{symbol})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		status := http.StatusInternalServerError
+		if errors.Is(err, services.ErrInvalidQuotePayload) {
+			status = http.StatusBadGateway
+			err = errors.New("invalid quote payload: " + err.Error())
+		}
+		c.JSON(status, gin.H{
 			"success": false,
 			"error":   err.Error(),
 		})

@@ -128,13 +128,10 @@ func (m *DataProviderManager) GetQuotes(ctx context.Context, symbols []string) (
 		}
 	}
 
-	// All providers failed - fall back to demo mode if available
-	if m.mockService == nil {
-		m.mockService = NewMockDataService()
+	if lastErr == nil {
+		lastErr = fmt.Errorf("no live data providers available")
 	}
-
-	log.Printf("[DataProvider] All providers failed, falling back to mock data. Last error: %v", lastErr)
-	return m.mockService.GetQuotes(symbols)
+	return nil, fmt.Errorf("all live data providers failed: %w", lastErr)
 }
 
 // tryProvider attempts to get quotes from a specific provider
@@ -165,10 +162,6 @@ func (m *DataProviderManager) fetchAlphaVantageQuotes(symbols []string) ([]model
 	for _, symbol := range symbols {
 		if !m.alphaVantage.IsAvailable() {
 			// Rate limit hit during batch
-			if len(stocks) > 0 {
-				log.Printf("[AlphaVantage] Rate limited after %d symbols, returning partial results", len(stocks))
-				return stocks, nil
-			}
 			return nil, NewRateLimitError("alpha_vantage", m.alphaVantage.rateLimiter.GetWaitTime())
 		}
 
@@ -176,10 +169,6 @@ func (m *DataProviderManager) fetchAlphaVantageQuotes(symbols []string) ([]model
 		if err != nil {
 			var apiErr *APIError
 			if errors.As(err, &apiErr) && errors.Is(apiErr.Underlying, ErrRateLimited) {
-				// Return what we have so far
-				if len(stocks) > 0 {
-					return stocks, nil
-				}
 				return nil, err
 			}
 			// Skip this symbol but continue

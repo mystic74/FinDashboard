@@ -208,7 +208,7 @@ Test coverage includes:
 
 ## Data Sources
 
-With **`DEMO_MODE=false`**, the HTTP API uses **Yahoo Finance** for screener and stock data. Additional provider code (FMP, Alpha Vantage) exists under `services/` but is **not** wired into the live routes yet.
+With **`DEMO_MODE=false`**, the HTTP API uses a provider manager with **Yahoo Finance** always available plus **FMP** and **Alpha Vantage** when their API keys are set. Docker Compose passes those provider settings through from `.env` into the backend container.
 
 ## Environment Variables
 
@@ -218,6 +218,8 @@ Copy `.env.example` to `.env` and configure:
 cp .env.example .env
 ```
 
+When you run via Docker Compose, the backend container receives the same provider-related env vars from `.env`, including `YAHOO_QUOTE_DRIVER`, `FMP_API_KEY`, `ALPHA_VANTAGE_KEY`, and `MIN_WORKING_PROVIDERS`.
+
 ### Backend Variables
 
 | Variable | Default | Description |
@@ -225,9 +227,12 @@ cp .env.example .env
 | `PORT` | `8080` | Server port |
 | `GIN_MODE` | `release` | Gin mode (`debug` or `release`) |
 | `DEMO_MODE` | `false` | Use mock data (`true`) or live Yahoo Finance (`false`) |
-| `YAHOO_QUOTE_DRIVER` | `ffeng` | Yahoo quote path: `resty` (raw HTTP), `ffeng` (FFengIll yfinance-go), `ampyfin` (AmpyFin yfinance-go) |
+| `YAHOO_QUOTE_DRIVER` | `resty` | Yahoo quote path: `resty` (raw HTTP, highest field parity), `ffeng` (FFengIll yfinance-go), `ampyfin` (AmpyFin yfinance-go) |
 | `CORS_ORIGIN` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins (comma-separated) |
 | `CACHE_TTL` | `5m` | In-memory cache TTL (Go duration string) |
+| `FMP_API_KEY` | _(unset)_ | Enables Financial Modeling Prep as an additional live provider. |
+| `ALPHA_VANTAGE_KEY` | _(unset)_ | Enables Alpha Vantage as an additional live provider. |
+| `MIN_WORKING_PROVIDERS` | `2` | Minimum providers expected by `make verify-providers`; passed through in Docker for parity with local checks. |
 
 ### Frontend Variables
 

@@ -26,7 +26,7 @@ type YahooFinanceService struct {
 	quoteDriver string
 }
 
-// NewYahooFinanceService creates a Yahoo Finance service with default quote driver (ffeng).
+// NewYahooFinanceService creates a Yahoo Finance service with default quote driver (resty).
 func NewYahooFinanceService(cache *CacheService) *YahooFinanceService {
 	return NewYahooFinanceServiceWithDriver(cache, "")
 }
@@ -59,13 +59,13 @@ func (y *YahooFinanceService) QuoteDriver() string {
 func normalizeYahooQuoteDriver(d string) string {
 	d = strings.ToLower(strings.TrimSpace(d))
 	if d == "" {
-		d = YahooQuoteDriverFFeng
+		d = YahooQuoteDriverResty
 	}
 	switch d {
 	case YahooQuoteDriverResty, YahooQuoteDriverFFeng, YahooQuoteDriverAmpyFin:
 		return d
 	default:
-		return YahooQuoteDriverFFeng
+		return YahooQuoteDriverResty
 	}
 }
 
@@ -144,6 +144,9 @@ func (y *YahooFinanceService) GetQuotes(ctx context.Context, symbols []string) (
 		allStocks, err = y.getQuotesFFeng(ctx, symbols)
 	}
 	if err != nil {
+		return nil, err
+	}
+	if err := ValidateStockQuotes(allStocks); err != nil {
 		return nil, err
 	}
 

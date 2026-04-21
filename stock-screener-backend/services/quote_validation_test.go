@@ -20,7 +20,7 @@ func TestValidateStockQuote(t *testing.T) {
 		{name: "nan price", stock: &models.Stock{Symbol: "AAPL", Price: math.NaN()}, wantErr: true},
 		{name: "inf price", stock: &models.Stock{Symbol: "AAPL", Price: math.Inf(1)}, wantErr: true},
 		{name: "negative price", stock: &models.Stock{Symbol: "AAPL", Price: -0.01}, wantErr: true},
-		{name: "ok zero price", stock: &models.Stock{Symbol: "AAPL", Price: 0}, wantErr: false},
+		{name: "zero price", stock: &models.Stock{Symbol: "AAPL", Price: 0}, wantErr: true},
 		{name: "ok positive", stock: &models.Stock{Symbol: "AAPL", Price: 123.45}, wantErr: false},
 	}
 	for _, tt := range tests {

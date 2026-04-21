@@ -101,8 +101,7 @@ func (e *ScreenerEngine) RunScreener(ctx context.Context, screener models.Screen
 		if needsFundamentals && e.yahooService != nil {
 			stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
 			if err != nil {
-				// Keep results available even when fundamentals endpoint is blocked.
-				log.Printf("[ScreenerEngine] fundamentals fetch failed, continuing with quote-only data: %v", err)
+				return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
 			}
 		}
 	}
@@ -153,8 +152,7 @@ func (e *ScreenerEngine) RunCustomScreener(ctx context.Context, request models.F
 		if needsFundamentals && e.yahooService != nil {
 			stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
 			if err != nil {
-				// Keep results available even when fundamentals endpoint is blocked.
-				log.Printf("[ScreenerEngine] fundamentals fetch failed, continuing with quote-only data: %v", err)
+				return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
 			}
 		}
 	}
