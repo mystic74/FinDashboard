@@ -67,6 +67,14 @@ func (h *StockHandler) GetStock(c *gin.Context) {
 		return
 	}
 
+	if err := services.ValidateStockQuote(&stocks[0]); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"success": false,
+			"error":   "invalid quote payload: " + err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"stock":   stocks[0],
@@ -157,6 +165,14 @@ func (h *StockHandler) GetMultipleStocks(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"error":   err.Error(),
+		})
+		return
+	}
+
+	if err := services.ValidateStockQuotes(stocks); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"success": false,
+			"error":   "invalid quote payload: " + err.Error(),
 		})
 		return
 	}
@@ -256,6 +272,14 @@ func (h *StockHandler) GetStockQuote(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
 			"error":   "Stock not found",
+		})
+		return
+	}
+
+	if err := services.ValidateStockQuote(&stocks[0]); err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{
+			"success": false,
+			"error":   "invalid quote payload: " + err.Error(),
 		})
 		return
 	}

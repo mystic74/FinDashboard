@@ -1,4 +1,4 @@
-.PHONY: all help setup dev dev-docker prod backend frontend test clean
+.PHONY: all help setup dev dev-docker prod backend frontend test clean verify-providers
 
 # Default target
 all: help
@@ -28,6 +28,7 @@ help:
 	@echo "  make test         - Run all tests"
 	@echo "  make test-verbose - Run tests with verbose output"
 	@echo "  make test-coverage - Generate test coverage report"
+	@echo "  make verify-providers - Probe FMP / Alpha Vantage / Yahoo (needs keys; min 2 OK by default)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean        - Clean build artifacts and containers"
@@ -120,6 +121,10 @@ test-coverage:
 	cd stock-screener-backend && go test ./... -cover -coverprofile=coverage.out
 	cd stock-screener-backend && go tool cover -html=coverage.out -o coverage.html
 	@echo "Coverage report: stock-screener-backend/coverage.html"
+
+# Live HTTP calls to configured providers; exits non-zero if fewer than MIN_WORKING_PROVIDERS (default 2) succeed.
+verify-providers:
+	cd stock-screener-backend && go run ./cmd/providercheck
 
 # =============================================================================
 # Dependencies
