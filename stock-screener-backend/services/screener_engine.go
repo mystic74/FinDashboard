@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 	"sort"
 	"stock-screener/models"
@@ -12,11 +13,12 @@ import (
 
 // ScreenerEngine handles stock screening operations
 type ScreenerEngine struct {
-	yahooService *YahooFinanceService
-	mockService  *MockDataService
-	cache        *CacheService
+	yahooService  *YahooFinanceService
+	dataProvider  *DataProviderManager
+	mockService   *MockDataService
+	cache         *CacheService
 	stockUniverse []string
-	demoMode     bool
+	demoMode      bool
 }
 
 // NewScreenerEngine creates a new screener engine
@@ -53,16 +55,29 @@ func (e *ScreenerEngine) IsDemoMode() bool {
 }
 
 // getStocks fetches stocks from the appropriate source
-func (e *ScreenerEngine) getStocks() ([]models.Stock, error) {
+func (e *ScreenerEngine) getStocks(ctx context.Context) ([]models.Stock, error) {
 	if e.demoMode {
 		return e.mockService.GetAllStocks(), nil
 	}
-	return e.yahooService.GetQuotes(e.stockUniverse)
+
+	if e.dataProvider != nil {
+		stocks, err := e.dataProvider.GetQuotes(ctx, e.stockUniverse)
+		if err == nil {
+			return stocks, nil
+		}
+		log.Printf("[ScreenerEngine] provider manager quote fetch failed: %v", err)
+	}
+	return e.yahooService.GetQuotes(ctx, e.stockUniverse)
 }
 
 // SetStockUniverse updates the stock universe for screening
 func (e *ScreenerEngine) SetStockUniverse(symbols []string) {
 	e.stockUniverse = symbols
+}
+
+// SetDataProviderManager configures resilient quote retrieval with provider fallback.
+func (e *ScreenerEngine) SetDataProviderManager(provider *DataProviderManager) {
+	e.dataProvider = provider
 }
 
 // GetStockUniverse returns the current stock universe
@@ -75,7 +90,7 @@ func (e *ScreenerEngine) RunScreener(ctx context.Context, screener models.Screen
 	startTime := time.Now()
 
 	// Fetch all stocks
-	stocks, err := e.getStocks()
+	stocks, err := e.getStocks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch stocks: %w", err)
 	}
@@ -83,10 +98,11 @@ func (e *ScreenerEngine) RunScreener(ctx context.Context, screener models.Screen
 	// Enrich with fundamentals for complex screeners (only in non-demo mode)
 	if !e.demoMode {
 		needsFundamentals := e.screenerNeedsFundamentals(screener)
-		if needsFundamentals {
+		if needsFundamentals && e.yahooService != nil {
 			stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
+				// Keep results available even when fundamentals endpoint is blocked.
+				log.Printf("[ScreenerEngine] fundamentals fetch failed, continuing with quote-only data: %v", err)
 			}
 		}
 	}
@@ -119,7 +135,7 @@ func (e *ScreenerEngine) RunScreener(ctx context.Context, screener models.Screen
 // RunCustomScreener runs a custom screener with arbitrary filters
 func (e *ScreenerEngine) RunCustomScreener(ctx context.Context, request models.FilterRequest) (*models.FilterResponse, error) {
 	// Fetch stocks
-	stocks, err := e.getStocks()
+	stocks, err := e.getStocks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch stocks: %w", err)
 	}
@@ -134,10 +150,11 @@ func (e *ScreenerEngine) RunCustomScreener(ctx context.Context, request models.F
 			}
 		}
 
-		if needsFundamentals {
+		if needsFundamentals && e.yahooService != nil {
 			stocks, err = e.yahooService.GetMultipleStocksWithFundamentals(ctx, e.stockUniverse)
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch fundamentals: %w", err)
+				// Keep results available even when fundamentals endpoint is blocked.
+				log.Printf("[ScreenerEngine] fundamentals fetch failed, continuing with quote-only data: %v", err)
 			}
 		}
 	}
@@ -467,7 +484,7 @@ func (e *ScreenerEngine) GetQuickScreenResults(ctx context.Context, screenerID s
 
 // GetSectorPerformance returns performance by sector
 func (e *ScreenerEngine) GetSectorPerformance(ctx context.Context) ([]models.SectorPerformance, error) {
-	stocks, err := e.getStocks()
+	stocks, err := e.getStocks(ctx)
 	if err != nil {
 		return nil, err
 	}

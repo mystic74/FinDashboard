@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"stock-screener/models"
 	"stock-screener/services"
 	"stock-screener/utils"
 	"strings"
@@ -11,12 +12,21 @@ import (
 
 // StockHandler handles stock-related requests
 type StockHandler struct {
-	yahooService *services.YahooFinanceService
+	yahooService    *services.YahooFinanceService
+	dataProviderMgr *services.DataProviderManager
 }
 
 // NewStockHandler creates a new stock handler
 func NewStockHandler(yahooService *services.YahooFinanceService) *StockHandler {
 	return &StockHandler{yahooService: yahooService}
+}
+
+// NewStockHandlerWithProviders creates a stock handler with provider fallback support.
+func NewStockHandlerWithProviders(providerMgr *services.DataProviderManager, yahooService *services.YahooFinanceService) *StockHandler {
+	return &StockHandler{
+		yahooService:    yahooService,
+		dataProviderMgr: providerMgr,
+	}
 }
 
 // GetStock returns data for a single stock
@@ -40,7 +50,7 @@ func (h *StockHandler) GetStock(c *gin.Context) {
 		return
 	}
 
-	stocks, err := h.yahooService.GetQuotes([]string{symbol})
+	stocks, err := h.getQuotes(c, []string{symbol})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -84,7 +94,7 @@ func (h *StockHandler) GetStockFundamentals(c *gin.Context) {
 		return
 	}
 
-	stock, err := h.yahooService.GetStockFundamentals(symbol)
+	stock, err := h.getStockFundamentals(c, symbol)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -142,7 +152,7 @@ func (h *StockHandler) GetMultipleStocks(c *gin.Context) {
 		return
 	}
 
-	stocks, err := h.yahooService.GetQuotes(validSymbols)
+	stocks, err := h.getQuotes(c, validSymbols)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -233,7 +243,7 @@ func (h *StockHandler) GetStockQuote(c *gin.Context) {
 		return
 	}
 
-	stocks, err := h.yahooService.GetQuotes([]string{symbol})
+	stocks, err := h.getQuotes(c, []string{symbol})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -263,4 +273,18 @@ func (h *StockHandler) GetStockQuote(c *gin.Context) {
 			"marketCap":     stock.MarketCap,
 		},
 	})
+}
+
+func (h *StockHandler) getQuotes(c *gin.Context, symbols []string) ([]models.Stock, error) {
+	if h.dataProviderMgr != nil {
+		return h.dataProviderMgr.GetQuotes(c.Request.Context(), symbols)
+	}
+	return h.yahooService.GetQuotes(c.Request.Context(), symbols)
+}
+
+func (h *StockHandler) getStockFundamentals(c *gin.Context, symbol string) (*models.Stock, error) {
+	if h.dataProviderMgr != nil {
+		return h.dataProviderMgr.GetStockWithFundamentals(c.Request.Context(), symbol)
+	}
+	return h.yahooService.GetStockFundamentals(symbol)
 }

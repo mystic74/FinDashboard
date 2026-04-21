@@ -44,32 +44,40 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	cacheService := services.NewCacheService(cfg.CacheTTL, cacheCleanup)
 
 	demoMode := cfg.DemoMode
+	dataProviderMgr := services.NewDataProviderManager(services.DataProviderConfig{
+		AlphaVantageKey:  cfg.AlphaVantageKey,
+		FMPKey:           cfg.FMPAPIKey,
+		DemoMode:         demoMode,
+		YahooQuoteDriver: cfg.YahooQuoteDriver,
+	}, cacheService)
 
 	var screenerEngine *services.ScreenerEngine
+	var stockHandler *handlers.StockHandler
 	if demoMode {
 		log.Println("Running in DEMO MODE with mock data")
 		screenerEngine = services.NewScreenerEngineWithDemo(cacheService)
+		// Keep historical-price support via Yahoo service in demo mode.
+		stockHandler = handlers.NewStockHandler(services.NewYahooFinanceServiceWithDriver(cacheService, cfg.YahooQuoteDriver))
 	} else {
-		log.Println("Running in LIVE MODE with Yahoo Finance API")
-		yahooService := services.NewYahooFinanceService(cacheService)
+		log.Println("Running in LIVE MODE with provider fallback (Yahoo/FMP/Alpha Vantage)")
+		yahooService := services.NewYahooFinanceServiceWithDriver(cacheService, cfg.YahooQuoteDriver)
 		screenerEngine = services.NewScreenerEngine(yahooService, cacheService)
+		screenerEngine.SetDataProviderManager(dataProviderMgr)
+		stockHandler = handlers.NewStockHandlerWithProviders(dataProviderMgr, yahooService)
 	}
-
-	// Yahoo service needed for stock handler (even in demo mode, just won't work)
-	yahooService := services.NewYahooFinanceService(cacheService)
 
 	// Initialize handlers
 	profileHandler := handlers.NewProfileHandler()
 	screenerHandler := handlers.NewScreenerHandler(screenerEngine, profileHandler)
-	stockHandler := handlers.NewStockHandler(yahooService)
 	filterHandler := handlers.NewFilterHandler()
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status":    "healthy",
-			"timestamp": time.Now().Format(time.RFC3339),
-			"demoMode":  demoMode,
+			"status":           "healthy",
+			"timestamp":        time.Now().Format(time.RFC3339),
+			"demoMode":         demoMode,
+			"yahooQuoteDriver": cfg.YahooQuoteDriver,
 		})
 	})
 

@@ -38,9 +38,10 @@ type DataProviderManager struct {
 
 // DataProviderConfig holds API keys and configuration
 type DataProviderConfig struct {
-	AlphaVantageKey string
-	FMPKey          string
-	DemoMode        bool
+	AlphaVantageKey  string
+	FMPKey           string
+	DemoMode         bool
+	YahooQuoteDriver string
 }
 
 // NewDataProviderManager creates a new data provider manager
@@ -59,11 +60,6 @@ func NewDataProviderManager(config DataProviderConfig, cache *CacheService) *Dat
 		return m
 	}
 
-	// Initialize Yahoo Finance (always available, but might be blocked)
-	m.yahooService = NewYahooFinanceService(cache)
-	m.providerOrder = append(m.providerOrder, "yahoo")
-	log.Println("[DataProvider] Yahoo Finance initialized (unofficial API)")
-
 	// Initialize Alpha Vantage if API key provided
 	if config.AlphaVantageKey != "" {
 		m.alphaVantage = NewAlphaVantageService(config.AlphaVantageKey, cache)
@@ -78,6 +74,11 @@ func NewDataProviderManager(config DataProviderConfig, cache *CacheService) *Dat
 		log.Println("[DataProvider] Financial Modeling Prep initialized (free tier: 250/day)")
 	}
 
+	// Initialize Yahoo Finance as fallback (unofficial, may be blocked).
+	m.yahooService = NewYahooFinanceServiceWithDriver(cache, config.YahooQuoteDriver)
+	m.providerOrder = append(m.providerOrder, "yahoo")
+	log.Printf("[DataProvider] Yahoo Finance fallback initialized (driver=%s)", m.yahooService.QuoteDriver())
+
 	if len(m.providerOrder) == 0 {
 		log.Println("[DataProvider] WARNING: No data providers configured, falling back to demo mode")
 		m.demoMode = true
@@ -90,7 +91,7 @@ func NewDataProviderManager(config DataProviderConfig, cache *CacheService) *Dat
 // GetQuotes fetches quotes using available providers with fallback
 func (m *DataProviderManager) GetQuotes(ctx context.Context, symbols []string) ([]models.Stock, error) {
 	if m.demoMode {
-		return m.mockService.GetAllStocks(), nil
+		return m.mockService.GetQuotes(symbols)
 	}
 
 	var lastErr error
@@ -103,7 +104,7 @@ func (m *DataProviderManager) GetQuotes(ctx context.Context, symbols []string) (
 		default:
 		}
 
-		stocks, err := m.tryProvider(providerName, symbols)
+		stocks, err := m.tryProvider(ctx, providerName, symbols)
 		if err == nil {
 			return stocks, nil
 		}
@@ -133,15 +134,15 @@ func (m *DataProviderManager) GetQuotes(ctx context.Context, symbols []string) (
 	}
 
 	log.Printf("[DataProvider] All providers failed, falling back to mock data. Last error: %v", lastErr)
-	return m.mockService.GetAllStocks(), nil
+	return m.mockService.GetQuotes(symbols)
 }
 
 // tryProvider attempts to get quotes from a specific provider
-func (m *DataProviderManager) tryProvider(name string, symbols []string) ([]models.Stock, error) {
+func (m *DataProviderManager) tryProvider(ctx context.Context, name string, symbols []string) ([]models.Stock, error) {
 	switch name {
 	case "yahoo":
 		if m.yahooService != nil {
-			return m.yahooService.GetQuotes(symbols)
+			return m.yahooService.GetQuotes(ctx, symbols)
 		}
 	case "alpha_vantage":
 		if m.alphaVantage != nil && m.alphaVantage.IsAvailable() {
@@ -296,7 +297,7 @@ func (m *DataProviderManager) HealthCheck(ctx context.Context) map[string]interf
 	// Check Yahoo
 	if m.yahooService != nil {
 		// Quick test with a known symbol
-		_, err := m.yahooService.GetQuotes([]string{"AAPL"})
+		_, err := m.yahooService.GetQuotes(context.Background(), []string{"AAPL"})
 		if err == nil {
 			providerResults["yahoo"] = map[string]interface{}{
 				"healthy": true,

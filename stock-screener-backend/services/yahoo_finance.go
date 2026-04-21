@@ -22,15 +22,24 @@ type YahooFinanceService struct {
 	baseURL       string
 	cacheTTL      time.Duration
 	maxConcurrent int
+	// quoteDriver selects implementation: resty (raw Resty HTTP), ffeng (FFengIll yfinance-go), ampyfin (AmpyFin yfinance-go).
+	quoteDriver string
 }
 
-// NewYahooFinanceService creates a new Yahoo Finance service
+// NewYahooFinanceService creates a Yahoo Finance service with default quote driver (ffeng).
 func NewYahooFinanceService(cache *CacheService) *YahooFinanceService {
+	return NewYahooFinanceServiceWithDriver(cache, "")
+}
+
+// NewYahooFinanceServiceWithDriver creates a Yahoo Finance service with an explicit quote driver.
+func NewYahooFinanceServiceWithDriver(cache *CacheService, quoteDriver string) *YahooFinanceService {
 	client := resty.New()
 	client.SetTimeout(30 * time.Second)
 	client.SetRetryCount(3)
 	client.SetRetryWaitTime(1 * time.Second)
 	client.SetHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+	d := normalizeYahooQuoteDriver(quoteDriver)
 
 	return &YahooFinanceService{
 		client:        client,
@@ -38,6 +47,25 @@ func NewYahooFinanceService(cache *CacheService) *YahooFinanceService {
 		baseURL:       "https://query1.finance.yahoo.com",
 		cacheTTL:      5 * time.Minute,
 		maxConcurrent: 10,
+		quoteDriver:   d,
+	}
+}
+
+// QuoteDriver returns the active Yahoo quote implementation (resty | ffeng | ampyfin).
+func (y *YahooFinanceService) QuoteDriver() string {
+	return y.quoteDriver
+}
+
+func normalizeYahooQuoteDriver(d string) string {
+	d = strings.ToLower(strings.TrimSpace(d))
+	if d == "" {
+		d = YahooQuoteDriverFFeng
+	}
+	switch d {
+	case YahooQuoteDriverResty, YahooQuoteDriverFFeng, YahooQuoteDriverAmpyFin:
+		return d
+	default:
+		return YahooQuoteDriverFFeng
 	}
 }
 
@@ -91,41 +119,35 @@ type YahooQuote struct {
 	Industry                     string  `json:"industry,omitempty"`
 }
 
-// GetQuotes fetches quotes for multiple symbols
-func (y *YahooFinanceService) GetQuotes(symbols []string) ([]models.Stock, error) {
+// GetQuotes fetches quotes for multiple symbols using the configured quote driver.
+func (y *YahooFinanceService) GetQuotes(ctx context.Context, symbols []string) ([]models.Stock, error) {
 	if len(symbols) == 0 {
 		return []models.Stock{}, nil
 	}
 
 	// Check cache first
-	cacheKey := fmt.Sprintf("quotes:%s", strings.Join(symbols, ","))
+	cacheKey := fmt.Sprintf("quotes:%s:%s", y.quoteDriver, strings.Join(symbols, ","))
 	if cached, found := y.cache.Get(cacheKey); found {
 		if stocks, ok := cached.([]models.Stock); ok {
 			return stocks, nil
 		}
 	}
 
-	// Batch symbols (Yahoo allows up to ~200 per request)
-	batchSize := 100
 	var allStocks []models.Stock
-
-	for i := 0; i < len(symbols); i += batchSize {
-		end := i + batchSize
-		if end > len(symbols) {
-			end = len(symbols)
-		}
-		batch := symbols[i:end]
-
-		stocks, err := y.fetchQuoteBatch(batch)
-		if err != nil {
-			return nil, err
-		}
-		allStocks = append(allStocks, stocks...)
+	var err error
+	switch y.quoteDriver {
+	case YahooQuoteDriverResty:
+		allStocks, err = y.getQuotesResty(ctx, symbols)
+	case YahooQuoteDriverAmpyFin:
+		allStocks, err = y.getQuotesAmpyFin(ctx, symbols)
+	default:
+		allStocks, err = y.getQuotesFFeng(ctx, symbols)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	// Cache the result
 	y.cache.Set(cacheKey, allStocks, y.cacheTTL)
-
 	return allStocks, nil
 }
 
@@ -492,7 +514,7 @@ func (y *YahooFinanceService) CalculateTechnicalIndicators(stock *models.Stock, 
 // GetMultipleStocksWithFundamentals fetches multiple stocks with full fundamentals
 func (y *YahooFinanceService) GetMultipleStocksWithFundamentals(ctx context.Context, symbols []string) ([]models.Stock, error) {
 	// First get basic quotes
-	stocks, err := y.GetQuotes(symbols)
+	stocks, err := y.GetQuotes(ctx, symbols)
 	if err != nil {
 		return nil, err
 	}

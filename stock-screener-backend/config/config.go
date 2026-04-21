@@ -21,6 +21,8 @@ type Config struct {
 	AllowedOrigins  []string
 	RequestTimeout  time.Duration
 	MaxConcurrent   int
+	// YahooQuoteDriver selects how Yahoo-backed quotes are fetched: resty | ffeng | ampyfin (see .env.example).
+	YahooQuoteDriver string
 }
 
 // DefaultConfig returns the default configuration
@@ -41,20 +43,28 @@ func DefaultConfig() *Config {
 		ginMode = "release"
 	}
 
+	yahooDriver := strings.ToLower(strings.TrimSpace(getEnv("YAHOO_QUOTE_DRIVER", "ffeng")))
+	switch yahooDriver {
+	case "resty", "ffeng", "ampyfin":
+	default:
+		yahooDriver = "ffeng"
+	}
+
 	return &Config{
-		ServerPort:      getEnv("PORT", "8080"),
-		CacheTTL:        cacheTTL,
-		GinMode:         ginMode,
-		RateLimitPerMin: 60,
-		DemoMode:        demoMode,
-		YahooFinanceURL: "https://query1.finance.yahoo.com",
-		FMPBaseURL:      "https://financialmodelingprep.com/api/v3",
-		FMPAPIKey:       getEnv("FMP_API_KEY", ""),
-		AlphaVantageURL: "https://www.alphavantage.co/query",
-		AlphaVantageKey: getEnv("ALPHA_VANTAGE_KEY", ""),
-		AllowedOrigins:  origins,
-		RequestTimeout:  30 * time.Second,
-		MaxConcurrent:   10,
+		ServerPort:       getEnv("PORT", "8080"),
+		CacheTTL:         cacheTTL,
+		GinMode:          ginMode,
+		RateLimitPerMin:  60,
+		DemoMode:         demoMode,
+		YahooQuoteDriver: yahooDriver,
+		YahooFinanceURL:  "https://query1.finance.yahoo.com",
+		FMPBaseURL:       "https://financialmodelingprep.com/api/v3",
+		FMPAPIKey:        getEnv("FMP_API_KEY", ""),
+		AlphaVantageURL:  "https://www.alphavantage.co/query",
+		AlphaVantageKey:  getEnv("ALPHA_VANTAGE_KEY", ""),
+		AllowedOrigins:   origins,
+		RequestTimeout:   30 * time.Second,
+		MaxConcurrent:    10,
 	}
 }
 

@@ -225,6 +225,7 @@ cp .env.example .env
 | `PORT` | `8080` | Server port |
 | `GIN_MODE` | `release` | Gin mode (`debug` or `release`) |
 | `DEMO_MODE` | `false` | Use mock data (`true`) or live Yahoo Finance (`false`) |
+| `YAHOO_QUOTE_DRIVER` | `ffeng` | Yahoo quote path: `resty` (raw HTTP), `ffeng` (FFengIll yfinance-go), `ampyfin` (AmpyFin yfinance-go) |
 | `CORS_ORIGIN` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins (comma-separated) |
 | `CACHE_TTL` | `5m` | In-memory cache TTL (Go duration string) |
 
