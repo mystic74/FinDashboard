@@ -10,12 +10,15 @@ require (
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.11.1
+	github.com/wnjoon/go-yfinance v1.2.0
 	golang.org/x/sync v0.19.0
 )
 
 require (
 	github.com/AmpyFin/ampy-observability/go/ampyobs v0.0.0-20250916020757-c817ca95b843 // indirect
 	github.com/AmpyFin/ampy-proto/v2 v2.1.1 // indirect
+	github.com/Danny-Dasilva/CycleTLS/cycletls v1.0.26 // indirect
+	github.com/Danny-Dasilva/fhttp v0.0.0-20240217042913-eeeb0b347ce1 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/sonic v1.10.2 // indirect
@@ -34,6 +37,7 @@ require (
 	github.com/go-playground/validator/v10 v10.17.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
@@ -73,4 +77,5 @@ require (
 	google.golang.org/grpc v1.75.0 // indirect
 	google.golang.org/protobuf v1.36.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	h12.io/socks v1.0.3 // indirect
 )

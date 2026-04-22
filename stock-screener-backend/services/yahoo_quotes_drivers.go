@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"strings"
 	"sync"
@@ -11,6 +12,9 @@ import (
 
 	ampyfin "github.com/AmpyFin/yfinance-go"
 	ffeng "github.com/FFengIll/yfinance-go"
+	yfclient "github.com/wnjoon/go-yfinance/pkg/client"
+	yfq "github.com/wnjoon/go-yfinance/pkg/models"
+	yfticker "github.com/wnjoon/go-yfinance/pkg/ticker"
 	"stock-screener/models"
 
 	"golang.org/x/sync/errgroup"
@@ -21,7 +25,11 @@ const (
 	YahooQuoteDriverResty   = "resty"
 	YahooQuoteDriverFFeng   = "ffeng"
 	YahooQuoteDriverAmpyFin = "ampyfin"
+	// YahooQuoteDriverWnjoon uses github.com/wnjoon/go-yfinance (CycleTLS + crumb auth; avoids naive HTTP 401s).
+	YahooQuoteDriverWnjoon = "wnjoon"
 )
+
+const wnjoonQuoteBatchSize = 50
 
 func (y *YahooFinanceService) getQuotesResty(_ context.Context, symbols []string) ([]models.Stock, error) {
 	batchSize := 100
@@ -57,6 +65,129 @@ func (y *YahooFinanceService) getQuotesFFeng(ctx context.Context, symbols []stri
 		out = append(out, convertFFengQuoteToStock(q))
 	}
 	return out, nil
+}
+
+func (y *YahooFinanceService) getQuotesWnjoon(ctx context.Context, symbols []string) ([]models.Stock, error) {
+	if len(symbols) == 0 {
+		return []models.Stock{}, nil
+	}
+	normalized := make([]string, 0, len(symbols))
+	for _, sym := range symbols {
+		s := strings.TrimSpace(sym)
+		if s == "" {
+			continue
+		}
+		normalized = append(normalized, strings.ToUpper(s))
+	}
+	if len(normalized) == 0 {
+		return []models.Stock{}, nil
+	}
+
+	var all []models.Stock
+	for i := 0; i < len(normalized); i += wnjoonQuoteBatchSize {
+		end := i + wnjoonQuoteBatchSize
+		if end > len(normalized) {
+			end = len(normalized)
+		}
+		batch := normalized[i:end]
+		stocks, err := y.getQuotesWnjoonBatch(ctx, batch)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, stocks...)
+	}
+	return all, nil
+}
+
+func wnjoonQuoteErrSkippable(err error) bool {
+	if err == nil {
+		return false
+	}
+	return yfclient.IsNotFoundError(err) || yfclient.IsNoDataError(err) || yfclient.IsInvalidSymbolError(err)
+}
+
+func (y *YahooFinanceService) getQuotesWnjoonBatch(ctx context.Context, batch []string) ([]models.Stock, error) {
+	// One Ticker (and CycleTLS client) per symbol, bounded by maxConcurrent — safe in parallel and
+	// much faster than sharing one client (sequential) across hundreds of S&P / index names.
+	var out []models.Stock
+	var mu sync.Mutex
+	g, ctx := errgroup.WithContext(ctx)
+	g.SetLimit(y.maxConcurrent)
+	for _, sym := range batch {
+		sym := sym
+		g.Go(func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			tkr, err := yfticker.New(sym)
+			if err != nil {
+				if wnjoonQuoteErrSkippable(err) {
+					log.Printf("[Yahoo/wnjoon] skip %s: %v", sym, err)
+					return nil
+				}
+				return fmt.Errorf("wnjoon ticker %s: %w", sym, err)
+			}
+			defer tkr.Close()
+			q, err := tkr.Quote()
+			if err != nil {
+				if wnjoonQuoteErrSkippable(err) {
+					log.Printf("[Yahoo/wnjoon] skip %s: %v", sym, err)
+					return nil
+				}
+				return fmt.Errorf("wnjoon quote %s: %w", sym, err)
+			}
+			st := convertWnjoonQuoteToStock(q)
+			mu.Lock()
+			out = append(out, st)
+			mu.Unlock()
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func convertWnjoonQuoteToStock(q *yfq.Quote) models.Stock {
+	if q == nil {
+		return models.Stock{LastUpdated: time.Now()}
+	}
+	name := q.LongName
+	if name == "" {
+		name = q.ShortName
+	}
+	dividendYield := q.TrailingAnnualDividendYield * 100
+	return models.Stock{
+		Symbol:            q.Symbol,
+		Name:              name,
+		Exchange:          q.Exchange,
+		Currency:          q.Currency,
+		Price:             q.RegularMarketPrice,
+		Open:              q.RegularMarketOpen,
+		High:              q.RegularMarketDayHigh,
+		Low:               q.RegularMarketDayLow,
+		PreviousClose:     q.RegularMarketPreviousClose,
+		Change:            q.RegularMarketChange,
+		ChangePercent:     q.RegularMarketChangePercent,
+		Volume:            q.RegularMarketVolume,
+		AvgVolume:         q.AverageDailyVolume3Month,
+		AvgVolume10Day:    q.AverageDailyVolume10Day,
+		MarketCap:         q.MarketCap,
+		SharesOutstanding: q.SharesOutstanding,
+		Week52High:        q.FiftyTwoWeekHigh,
+		Week52Low:         q.FiftyTwoWeekLow,
+		MA50:              q.FiftyDayAverage,
+		MA200:             q.TwoHundredDayAverage,
+		PERatio:           q.TrailingPE,
+		ForwardPE:         q.ForwardPE,
+		PBRatio:           q.PriceToBook,
+		DividendYield:     dividendYield,
+		DividendPerShare:  q.TrailingAnnualDividendRate,
+		EPS:               q.EpsTrailingTwelveMonths,
+		BookValuePerShare: q.BookValue,
+		LastUpdated:       time.Now(),
+	}
 }
 
 func convertFFengQuoteToStock(q *ffeng.Quote) models.Stock {

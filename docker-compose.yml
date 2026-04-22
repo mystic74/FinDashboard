@@ -15,7 +15,7 @@ services:
       DEMO_MODE: ${DEMO_MODE:-false}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5173}
       CACHE_TTL: ${CACHE_TTL:-5m}
-      YAHOO_QUOTE_DRIVER: ${YAHOO_QUOTE_DRIVER:-resty}
+      YAHOO_QUOTE_DRIVER: ${YAHOO_QUOTE_DRIVER:-wnjoon}
       FMP_API_KEY: ${FMP_API_KEY:-}
       ALPHA_VANTAGE_KEY: ${ALPHA_VANTAGE_KEY:-}
       MIN_WORKING_PROVIDERS: ${MIN_WORKING_PROVIDERS:-2}

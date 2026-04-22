@@ -21,7 +21,7 @@ type Config struct {
 	AllowedOrigins  []string
 	RequestTimeout  time.Duration
 	MaxConcurrent   int
-	// YahooQuoteDriver selects how Yahoo-backed quotes are fetched: resty | ffeng | ampyfin (see .env.example).
+	// YahooQuoteDriver selects how Yahoo-backed quotes are fetched: wnjoon | resty | ffeng | ampyfin (see .env.example).
 	YahooQuoteDriver string
 }
 
@@ -43,11 +43,11 @@ func DefaultConfig() *Config {
 		ginMode = "release"
 	}
 
-	yahooDriver := strings.ToLower(strings.TrimSpace(getEnv("YAHOO_QUOTE_DRIVER", "resty")))
+	yahooDriver := strings.ToLower(strings.TrimSpace(getEnv("YAHOO_QUOTE_DRIVER", "wnjoon")))
 	switch yahooDriver {
-	case "resty", "ffeng", "ampyfin":
+	case "resty", "wnjoon", "ffeng", "ampyfin":
 	default:
-		yahooDriver = "resty"
+		yahooDriver = "wnjoon"
 	}
 
 	return &Config{

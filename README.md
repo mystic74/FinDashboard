@@ -227,7 +227,7 @@ When you run via Docker Compose, the backend container receives the same provide
 | `PORT` | `8080` | Server port |
 | `GIN_MODE` | `release` | Gin mode (`debug` or `release`) |
 | `DEMO_MODE` | `false` | Use mock data (`true`) or live Yahoo Finance (`false`) |
-| `YAHOO_QUOTE_DRIVER` | `resty` | Yahoo quote path: `resty` (raw HTTP, highest field parity), `ffeng` (FFengIll yfinance-go), `ampyfin` (AmpyFin yfinance-go) |
+| `YAHOO_QUOTE_DRIVER` | `wnjoon` | Yahoo quotes: `wnjoon` ([go-yfinance](https://github.com/wnjoon/go-yfinance), default), `resty` (raw HTTP), `ffeng`, `ampyfin` |
 | `CORS_ORIGIN` | `http://localhost:3000,http://localhost:5173` | Allowed CORS origins (comma-separated) |
 | `CACHE_TTL` | `5m` | In-memory cache TTL (Go duration string) |
 | `FMP_API_KEY` | _(unset)_ | Enables Financial Modeling Prep as an additional live provider. |

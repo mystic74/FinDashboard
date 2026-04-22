@@ -22,11 +22,11 @@ type YahooFinanceService struct {
 	baseURL       string
 	cacheTTL      time.Duration
 	maxConcurrent int
-	// quoteDriver selects implementation: resty (raw Resty HTTP), ffeng (FFengIll yfinance-go), ampyfin (AmpyFin yfinance-go).
+	// quoteDriver selects implementation: resty, wnjoon (go-yfinance, default), ffeng, ampyfin.
 	quoteDriver string
 }
 
-// NewYahooFinanceService creates a Yahoo Finance service with default quote driver (resty).
+// NewYahooFinanceService creates a Yahoo Finance service with default quote driver (wnjoon).
 func NewYahooFinanceService(cache *CacheService) *YahooFinanceService {
 	return NewYahooFinanceServiceWithDriver(cache, "")
 }
@@ -46,12 +46,12 @@ func NewYahooFinanceServiceWithDriver(cache *CacheService, quoteDriver string) *
 		cache:         cache,
 		baseURL:       "https://query1.finance.yahoo.com",
 		cacheTTL:      5 * time.Minute,
-		maxConcurrent: 10,
+		maxConcurrent: 16,
 		quoteDriver:   d,
 	}
 }
 
-// QuoteDriver returns the active Yahoo quote implementation (resty | ffeng | ampyfin).
+// QuoteDriver returns the active Yahoo quote implementation (resty | wnjoon | ffeng | ampyfin).
 func (y *YahooFinanceService) QuoteDriver() string {
 	return y.quoteDriver
 }
@@ -59,13 +59,13 @@ func (y *YahooFinanceService) QuoteDriver() string {
 func normalizeYahooQuoteDriver(d string) string {
 	d = strings.ToLower(strings.TrimSpace(d))
 	if d == "" {
-		d = YahooQuoteDriverResty
+		d = YahooQuoteDriverWnjoon
 	}
 	switch d {
-	case YahooQuoteDriverResty, YahooQuoteDriverFFeng, YahooQuoteDriverAmpyFin:
+	case YahooQuoteDriverResty, YahooQuoteDriverWnjoon, YahooQuoteDriverFFeng, YahooQuoteDriverAmpyFin:
 		return d
 	default:
-		return YahooQuoteDriverResty
+		return YahooQuoteDriverWnjoon
 	}
 }
 
@@ -138,10 +138,14 @@ func (y *YahooFinanceService) GetQuotes(ctx context.Context, symbols []string) (
 	switch y.quoteDriver {
 	case YahooQuoteDriverResty:
 		allStocks, err = y.getQuotesResty(ctx, symbols)
+	case YahooQuoteDriverWnjoon:
+		allStocks, err = y.getQuotesWnjoon(ctx, symbols)
 	case YahooQuoteDriverAmpyFin:
 		allStocks, err = y.getQuotesAmpyFin(ctx, symbols)
-	default:
+	case YahooQuoteDriverFFeng:
 		allStocks, err = y.getQuotesFFeng(ctx, symbols)
+	default:
+		allStocks, err = y.getQuotesWnjoon(ctx, symbols)
 	}
 	if err != nil {
 		return nil, err

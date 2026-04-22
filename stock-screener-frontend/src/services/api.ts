@@ -18,7 +18,8 @@ const API_BASE_URL = viteApiRoot
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000,
+  // Full-universe Yahoo quotes (600+ symbols) run far longer than 30s; screener UX needs headroom.
+  timeout: 180000,
   headers: {
     'Content-Type': 'application/json',
   },
